@@ -51,11 +51,20 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
     
-    // Auto-populate current date and time
-    const now = new Date();
-    // Format to YYYY-MM-DDTHH:MM for datetime-local input
-    const formattedDateTime = now.toISOString().slice(0, 16);
-    document.getElementById('date-time').value = formattedDateTime;
+    // Function to set the current date and time
+    function setDateTime() {
+        const now = new Date();
+        const year = now.getFullYear();
+        const month = (now.getMonth() + 1).toString().padStart(2, '0');
+        const day = now.getDate().toString().padStart(2, '0');
+        const hours = now.getHours().toString().padStart(2, '0');
+        const minutes = now.getMinutes().toString().padStart(2, '0');
+        const formattedDateTime = `${year}-${month}-${day}T${hours}:${minutes}`;
+        document.getElementById('date-time').value = formattedDateTime;
+    }
+
+    // Auto-populate current date and time on page load
+    setDateTime();
     
     // Dropdown functionality for work front
     workFrontHeader.addEventListener('click', function() {
@@ -415,7 +424,7 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // Reset form and auto-populate datetime
         form.reset();
-        document.getElementById('date-time').value = new Date().toISOString().slice(0, 16);
+        setDateTime();
         
         // Hide location display after form reset
         locationDisplay.style.display = 'none';
