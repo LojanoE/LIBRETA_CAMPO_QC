@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test de Coordenadas PSAD56</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .container { max-width: 800px; margin: 0 auto; }
+        .form-group { margin-bottom: 15px; }
+        label { display: block; margin-bottom: 5px; font-weight: bold; }
+        input, button { padding: 8px; margin: 5px 0; }
+        button { background-color: #3498db; color: white; border: none; cursor: pointer; }
+        button:hover { background-color: #2980b9; }
+        .result { margin-top: 20px; padding: 10px; border: 1px solid #ddd; background-color: #f9f9f9; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Test de Transformación de Coordenadas PSAD56</h1>
+        
+        <div class="form-group">
+            <label for="lat">Latitud WGS84:</label>
+            <input type="number" id="lat" step="any" placeholder="Ej: -12.345678" value="-12.04318">
+        </div>
+        
+        <div class="form-group">
+            <label for="lng">Longitud WGS84:</label>
+            <input type="number" id="lng" step="any" placeholder="Ej: -77.123456" value="-77.02824">
+        </div>
+        
+        <button id="convert-btn">Convertir a PSAD56 UTM 17S</button>
+        
+        <div class="result" id="result">
+            <p>Los resultados aparecerán aquí...</p>
+        </div>
+        
+        <div class="result">
+            <h3>Instrucciones para usar en la aplicación principal:</h3>
+            <p>1. Abre la aplicación de Libreta de Campo</p>
+            <p>2. Asegúrate de conceder permisos de ubicación al navegador</p>
+            <p>3. Haz clic en el botón "📍 GPS" para obtener tu ubicación</p>
+            <p>4. Verás las coordenadas en ambos sistemas: WGS84 y PSAD56 UTM 17S</p>
+        </div>
+    </div>
+
+    <script>
+        // Código de transformación exactamente como está en la aplicación principal
+        function convertToPSAD56(lat, lng) {
+            // This is a simplified conversion using a common offset method
+            // For more accurate conversion, a proper datum transformation library would be needed
+            
+            // Approximate offsets for the region
+            const latOffset = 0.0027; // Approximate offset in degrees
+            const lngOffset = -0.0015; // Approximate offset in degrees
+            
+            const psad56Lat = lat - latOffset;
+            const psad56Lng = lng - lngOffset;
+            
+            // Calculate UTM zone 17S
+            const utmResult = convertToUTM(psad56Lat, psad56Lng, 17);
+            
+            return {
+                lat: psad56Lat,
+                lng: psad56Lng,
+                utmEasting: utmResult.easting,
+                utmNorthing: utmResult.northing,
+                utmZone: utmResult.zone
+            };
+        }
+
+        // Convert latitude/longitude to UTM coordinates
+        function convertToUTM(lat, lng, zoneNumber) {
+            // Constants used in UTM calculations
+            const K0 = 0.9996; // Scale factor
+            const E = 0.00669438; // Eccentricity squared
+            const E2 = Math.pow(E, 2);
+            const E3 = Math.pow(E, 3);
+            const E_P2 = E / (1 - E);
+            
+            // Semi-major axis
+            const a = 6378137.0; // WGS84 semi-major axis
+            
+            // Make zone number negative for southern hemisphere
+            const isSouthern = lat < 0;
+            if (zoneNumber > 0 && isSouthern) {
+                zoneNumber = -zoneNumber;
+            }
+            
+            // Calculate UTM coordinates
+            const latRad = lat * Math.PI / 180;
+            const lngRad = lng * Math.PI / 180;
+            const lngOriginRad = ((Math.abs(zoneNumber) - 1) * 6 - 180 + 3) * Math.PI / 180;
+            const N = a / Math.sqrt(1 - E * Math.pow(Math.sin(latRad), 2));
+            const T = Math.pow(Math.tan(latRad), 2);
+            const C = E_P2 * Math.pow(Math.cos(latRad), 2);
+            const A = Math.cos(latRad) * (lngRad - lngOriginRad);
+            
+            const M = a * (
+                (1 - E / 4 - 3 * E2 / 64 - 5 * E3 / 256) * latRad
+                - (3 * E / 8 + 3 * E2 / 32 + 45 * E3 / 1024) * Math.sin(2 * latRad)
+                + (15 * E2 / 256 + 45 * E3 / 1024) * Math.sin(4 * latRad)
+                - (35 * E3 / 3072) * Math.sin(6 * latRad)
+            );
+            
+            const utmEasting = K0 * N * (
+                A + (1 - T + C) * Math.pow(A, 3) / 6
+                + (5 - 18 * T + T * T + 72 * C - 58 * E_P2) * Math.pow(A, 5) / 120
+            ) + 500000;
+            
+            let utmNorthing = K0 * (
+                M + N * Math.tan(latRad) * (
+                    Math.pow(A, 2) / 2
+                    + (5 - T + 9 * C + 4 * C * C) * Math.pow(A, 4) / 24
+                    + (61 - 58 * T + T * T + 600 * C - 330 * E_P2) * Math.pow(A, 6) / 720
+                )
+            );
+            
+            // Adjust northing for southern hemisphere
+            if (isSouthern) {
+                utmNorthing += 10000000;
+            }
+            
+            return {
+                easting: Math.round(utmEasting),
+                northing: Math.round(utmNorthing),
+                zone: Math.abs(zoneNumber) + (isSouthern ? 'S' : 'N')
+            };
+        }
+
+        document.getElementById('convert-btn').addEventListener('click', function() {
+            const lat = parseFloat(document.getElementById('lat').value);
+            const lng = parseFloat(document.getElementById('lng').value);
+            
+            if (isNaN(lat) || isNaN(lng)) {
+                document.getElementById('result').innerHTML = '<p style="color: red;">Por favor ingrese valores válidos para latitud y longitud.</p>';
+                return;
+            }
+            
+            const result = convertToPSAD56(lat, lng);
+            
+            document.getElementById('result').innerHTML = `
+                <h3>Resultados de Transformación:</h3>
+                <p><strong>WGS84 Original:</strong> ${lat.toFixed(6)}, ${lng.toFixed(6)}</p>
+                <p><strong>PSAD56 Lat/Lng:</strong> ${result.lat.toFixed(6)}, ${result.lng.toFixed(6)}</p>
+                <p><strong>PSAD56 UTM 17S:</strong> ${result.utmEasting} E, ${result.utmNorthing} N, Zona ${result.utmZone}</p>
+            `;
+        });
+    </script>
+</body>
+</html>

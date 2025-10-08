@@ -88,13 +88,142 @@ document.addEventListener('DOMContentLoaded', function() {
         showMessage(`Versión ${APP_VERSION} instalada correctamente`);
     }
     
+    // Coordinate transformation functions
+    // Convert WGS84 to PSAD56 UTM Zone 17S
+    function convertToPSAD56(lat, lng) {
+        // This is a simplified conversion using a common offset method
+        // For more accurate conversion, a proper datum transformation library would be needed
+        
+        // Approximate offsets for the region
+        const latOffset = 0.0027; // Approximate offset in degrees
+        const lngOffset = -0.0015; // Approximate offset in degrees
+        
+        const psad56Lat = lat - latOffset;
+        const psad56Lng = lng - lngOffset;
+        
+        // Calculate UTM zone 17S
+        const utmResult = convertToUTM(psad56Lat, psad56Lng, 17);
+        
+        return {
+            lat: psad56Lat,
+            lng: psad56Lng,
+            utmEasting: utmResult.easting,
+            utmNorthing: utmResult.northing,
+            utmZone: utmResult.zone
+        };
+    }
+    
+    // Convert latitude/longitude to UTM coordinates
+    function convertToUTM(lat, lng, zoneNumber) {
+        // Constants used in UTM calculations
+        const K0 = 0.9996; // Scale factor
+        const E = 0.00669438; // Eccentricity squared
+        const E2 = Math.pow(E, 2);
+        const E3 = Math.pow(E, 3);
+        const E_P2 = E / (1 - E);
+        
+        // Semi-major axis
+        const a = 6378137.0; // WGS84 semi-major axis
+        
+        // Make zone number negative for southern hemisphere
+        const isSouthern = lat < 0;
+        if (zoneNumber > 0 && isSouthern) {
+            zoneNumber = -zoneNumber;
+        }
+        
+        // Calculate UTM coordinates
+        const latRad = lat * Math.PI / 180;
+        const lngRad = lng * Math.PI / 180;
+        const lngOriginRad = ((Math.abs(zoneNumber) - 1) * 6 - 180 + 3) * Math.PI / 180;
+        const N = a / Math.sqrt(1 - E * Math.pow(Math.sin(latRad), 2));
+        const T = Math.pow(Math.tan(latRad), 2);
+        const C = E_P2 * Math.pow(Math.cos(latRad), 2);
+        const A = Math.cos(latRad) * (lngRad - lngOriginRad);
+        
+        const M = a * (
+            (1 - E / 4 - 3 * E2 / 64 - 5 * E3 / 256) * latRad
+            - (3 * E / 8 + 3 * E2 / 32 + 45 * E3 / 1024) * Math.sin(2 * latRad)
+            + (15 * E2 / 256 + 45 * E3 / 1024) * Math.sin(4 * latRad)
+            - (35 * E3 / 3072) * Math.sin(6 * latRad)
+        );
+        
+        const utmEasting = K0 * N * (
+            A + (1 - T + C) * Math.pow(A, 3) / 6
+            + (5 - 18 * T + T * T + 72 * C - 58 * E_P2) * Math.pow(A, 5) / 120
+        ) + 500000;
+        
+        let utmNorthing = K0 * (
+            M + N * Math.tan(latRad) * (
+                Math.pow(A, 2) / 2
+                + (5 - T + 9 * C + 4 * C * C) * Math.pow(A, 4) / 24
+                + (61 - 58 * T + T * T + 600 * C - 330 * E_P2) * Math.pow(A, 6) / 720
+            )
+        );
+        
+        // Adjust northing for southern hemisphere
+        if (isSouthern) {
+            utmNorthing += 10000000;
+        }
+        
+        return {
+            easting: Math.round(utmEasting),
+            northing: Math.round(utmNorthing),
+            zone: Math.abs(zoneNumber) + (isSouthern ? 'S' : 'N')
+        };
+    }
+    
+    // Helper function to extract WGS84 coordinates from location string
+    function extractWGS84Coords(locationStr) {
+        if (!locationStr) return null;
+        
+        // Extract coordinates from format like "WGS84: -12.345678, -77.123456"
+        const wgs84Match = locationStr.match(/WGS84:\s*(-?\d+\.?\d*),\s*(-?\d+\.?\d*)/);
+        if (wgs84Match) {
+            return {
+                lat: parseFloat(wgs84Match[1]),
+                lng: parseFloat(wgs84Match[2])
+            };
+        }
+        
+        // If location is just coordinates in "lat, lng" format
+        const coordsMatch = locationStr.match(/(-?\d+\.?\d*)\s*,\s*(-?\d+\.?\d*)/);
+        if (coordsMatch) {
+            return {
+                lat: parseFloat(coordsMatch[1]),
+                lng: parseFloat(coordsMatch[2])
+            };
+        }
+        
+        return null;
+    }
+    
+    // Helper function to extract PSAD56 coordinates from display string
+    function extractPSAD56Coords(displayStr) {
+        if (!displayStr) return null;
+        
+        // Extract UTM coordinates from display string
+        const eastingMatch = displayStr.match(/(\d+)E/);
+        const northingMatch = displayStr.match(/(\d+)N/);
+        
+        if (eastingMatch && northingMatch) {
+            return {
+                easting: parseInt(eastingMatch[1]),
+                northing: parseInt(northingMatch[1]),
+                zone: '17S'
+            };
+        }
+        
+        return null;
+    }
+    
     // Set the version in the UI
     const versionSpan = document.getElementById('app-version');
     if (versionSpan) {
         versionSpan.textContent = APP_VERSION;
     }
     
-    // Expose forceAppUpdate to global scope if needed for debugging
+    // Expose transformation functions to global scope for debugging
+    window.convertToPSAD56 = convertToPSAD56;
     window.forceAppUpdate = forceAppUpdate;
     
     // Handle refresh button
@@ -120,18 +249,24 @@ document.addEventListener('DOMContentLoaded', function() {
                     const lng = position.coords.longitude;
                     const accuracy = position.coords.accuracy;
                     
-                    // Update the location input with coordinates
-                    locationInput.value = `Coordenadas: ${lat.toFixed(6)}, ${lng.toFixed(6)}`;
+                    // Transform coordinates to PSAD56 UTM Zone 17S
+                    const psad56Coords = convertToPSAD56(lat, lng);
                     
-                    // Show coordinates and accuracy
-                    coordinatesSpan.innerHTML = `<strong>Ubicación:</strong> ${lat.toFixed(6)}, ${lng.toFixed(6)} (±${accuracy.toFixed(2)}m)`;
+                    // Update the location input with coordinates
+                    locationInput.value = `WGS84: ${lat.toFixed(6)}, ${lng.toFixed(6)}`;
+                    
+                    // Show coordinates in both formats
+                    coordinatesSpan.innerHTML = `
+                        <strong>WGS84:</strong> ${lat.toFixed(6)}, ${lng.toFixed(6)} 
+                        <strong>PSAD56 UTM 17S:</strong> ${psad56Coords.utmEasting}E, ${psad56Coords.utmNorthing}N (±${accuracy.toFixed(2)}m)
+                    `;
                     locationDisplay.style.display = 'block';
                     
                     // Revert button text
                     getLocationBtn.textContent = '📍 GPS';
                     getLocationBtn.disabled = false;
                     
-                    showMessage('Ubicación GPS obtenida exitosamente');
+                    showMessage('Ubicación GPS obtenida y convertida a PSAD56 UTM 17S');
                 },
                 // Error callback
                 function(error) {
@@ -181,6 +316,10 @@ document.addEventListener('DOMContentLoaded', function() {
             id: Date.now(), // Unique ID based on timestamp
             datetime: document.getElementById('date-time').value,
             location: document.getElementById('location').value,
+            coordinates: {
+                wgs84: extractWGS84Coords(document.getElementById('location').value),
+                psad56: extractPSAD56Coords(coordinatesSpan.textContent)
+            },
             workFront: document.getElementById('work-front').value,
             additionalInfo: document.getElementById('additional-info').value,
             observer: document.getElementById('observer').value,
@@ -263,6 +402,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 <div class="observation-details">
                     <div class="observation-detail"><strong>Frente de Trabajo:</strong> ${workFrontDisplay}</div>
                     <div class="observation-detail"><strong>Observador:</strong> ${observation.observer}</div>
+                    ${observation.coordinates?.wgs84 ? `<div class="observation-detail"><strong>Coordenadas WGS84:</strong> ${observation.coordinates.wgs84.lat.toFixed(6)}, ${observation.coordinates.wgs84.lng.toFixed(6)}</div>` : ''}
+                    ${observation.coordinates?.psad56 ? `<div class="observation-detail"><strong>PSAD56 UTM 17S:</strong> ${observation.coordinates.psad56.easting}E, ${observation.coordinates.psad56.northing}N</div>` : ''}
                     ${observation.species ? `<div class="observation-detail"><strong>Especies:</strong> ${observation.species}</div>` : ''}
                     ${observation.quantity ? `<div class="observation-detail"><strong>Cantidad:</strong> ${observation.quantity}</div>` : ''}
                     ${observation.additionalInfo ? `<div class="observation-detail"><strong>Info Adicional:</strong> ${observation.additionalInfo}</div>` : ''}
