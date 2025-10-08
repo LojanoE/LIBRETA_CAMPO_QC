@@ -22,7 +22,20 @@ document.addEventListener('DOMContentLoaded', function() {
     const locationDisplay = document.getElementById('location-display');
     const coordinatesSpan = document.getElementById('coordinates');
     const notesTextarea = document.getElementById('notes');
-    const notesPreview = document.getElementById('notes-preview');
+    if (notesTextarea.value === '') {
+        notesTextarea.value = '• ';
+    }
+
+    notesTextarea.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            const start = this.selectionStart;
+            const end = this.selectionEnd;
+            const value = this.value;
+            this.value = value.substring(0, start) + '\n• ' + value.substring(end);
+            this.selectionStart = this.selectionEnd = start + 3;
+        }
+    });
     
     // Auto-populate current date and time
     const now = new Date();
@@ -83,49 +96,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
     
-    // Update preview as user types
-    notesTextarea.addEventListener('input', function() {
-        updateNotesPreview();
-    });
-    
-    // Initial update for empty textarea
-    updateNotesPreview();
-    
-    // Function to update the notes preview with bullet formatting
-    function updateNotesPreview() {
-        const text = notesTextarea.value;
-        const lines = text.split('\n');
-        
-        let previewHTML = '';
-        
-        for (const line of lines) {
-            const trimmedLine = line.trim();
-            
-            if (trimmedLine.startsWith('•') || trimmedLine.startsWith('-') || trimmedLine.startsWith('*')) {
-                // This line should be formatted as a bullet point
-                const content = trimmedLine.substring(1).trim(); // Remove bullet character and trim
-                previewHTML += `<div class="bullet-item">${escapeHtml(content)}</div>`;
-            } else if (trimmedLine !== '') {
-                // Regular line
-                previewHTML += `<div class="regular-item">${escapeHtml(trimmedLine)}</div>`;
-            } else if (line !== '') {
-                // Empty line but preserve the break
-                previewHTML += `<div class="regular-item"><br></div>`;
-            }
-        }
-        
-        notesPreview.innerHTML = previewHTML;
-    }
-    
-    // Helper function to escape HTML to prevent XSS
-    function escapeHtml(text) {
-        return text
-            .replace(/&/g, "&amp;")
-            .replace(/</g, "&lt;")
-            .replace(/>/g, "&gt;")
-            .replace(/"/g, "&quot;")
-            .replace(/'/g, "&#039;");
-    }
+
     
     // Check for app updates
     function checkForUpdates() {
@@ -415,7 +386,6 @@ document.addEventListener('DOMContentLoaded', function() {
             },
             workFront: document.getElementById('work-front').value,
             additionalInfo: document.getElementById('additional-info').value,
-            observer: document.getElementById('observer').value,
             notes: notesTextarea.value, // Use textarea value
             timestamp: new Date().toISOString()
         };
@@ -426,9 +396,6 @@ document.addEventListener('DOMContentLoaded', function() {
         // Reset form and auto-populate datetime
         form.reset();
         document.getElementById('date-time').value = new Date().toISOString().slice(0, 16);
-        
-        // Clear the notes preview
-        notesPreview.innerHTML = '';
         
         // Hide location display after form reset
         locationDisplay.style.display = 'none';
@@ -495,7 +462,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 <h3>${observation.location} <small>(${formatDateTime(observation.datetime)})</small></h3>
                 <div class="observation-details">
                     <div class="observation-detail"><strong>Frente de Trabajo:</strong> ${workFrontDisplay}</div>
-                    <div class="observation-detail"><strong>Tema Observado:</strong> ${observation.observer}</div>
                     ${observation.coordinates?.wgs84 ? `<div class="observation-detail"><strong>Coordenadas WGS84:</strong> ${observation.coordinates.wgs84.lat.toFixed(6)}, ${observation.coordinates.wgs84.lng.toFixed(6)}</div>` : ''}
                     ${observation.coordinates?.psad56 ? `<div class="observation-detail"><strong>PSAD56 UTM 17S:</strong> ${observation.coordinates.psad56.easting}E, ${observation.coordinates.psad56.northing}N</div>` : ''}
                     ${observation.additionalInfo ? `<div class="observation-detail"><strong>Info Adicional:</strong> ${observation.additionalInfo}</div>` : ''}
