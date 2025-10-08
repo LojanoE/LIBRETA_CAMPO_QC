@@ -1,8 +1,18 @@
 // Libreta de Campo - JavaScript functionality
 // Current app version
-const APP_VERSION = '1.1.0'; // Increment this version number for updates
+const APP_VERSION = '1.1.2'; // Increment this version number for updates
+
+// Function to set the version query parameter on assets
+function setVersion() {
+    const version = APP_VERSION;
+    document.getElementById('main-styles').href = `styles.css?v=${version}`;
+    document.getElementById('main-script').src = `script.js?v=${version}`;
+    document.getElementById('app-version').textContent = version;
+}
 
 document.addEventListener('DOMContentLoaded', function() {
+    // Set the version of the app
+    setVersion();
     // Check for updates on page load
     checkForUpdates();
     
@@ -100,28 +110,23 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Check for app updates
     function checkForUpdates() {
-        const storedVersion = localStorage.getItem('appVersion');
-        
-        // If no version is stored, this is the first time the app is running
-        if (!storedVersion) {
-            localStorage.setItem('appVersion', APP_VERSION);
-            return;
+        // Simulate fetching a version file from the server
+        const remoteVersion = '1.1.2'; // In a real app, you would fetch this from a file on your server
+
+        if (compareVersions(APP_VERSION, remoteVersion) < 0) {
+            if (confirm(`Hay una nueva versión (${remoteVersion}) disponible. ¿Desea actualizar ahora?`)) {
+                localStorage.setItem('appVersion', remoteVersion);
+                location.reload(true);
+            }
         }
-        
-        // Check if version has changed (indicating an update)
-        if (storedVersion !== APP_VERSION) {
-            // For version changes, we can optionally clear old data if needed
-            // For now, we'll just update the version and notify the user
-            localStorage.setItem('appVersion', APP_VERSION);
-            
-            // Show update notification
-            showMessage(`Aplicación actualizada a la versión ${APP_VERSION}`);
-            
-            // Optionally clear old data if there are breaking changes between versions
-            // Example: if (compareVersions(storedVersion, '1.0.0') < 0) {
-            //   localStorage.removeItem('oldDataFormat');
-            // }
-        }
+    }
+
+    // Handle online status
+    window.addEventListener('online', handleOnlineStatus);
+
+    function handleOnlineStatus() {
+        showMessage('Conectado a internet. Comprobando actualizaciones...');
+        checkForUpdates();
     }
     
     // Helper function to compare versions (simplified)
