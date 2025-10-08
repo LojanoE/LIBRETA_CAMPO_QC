@@ -224,6 +224,60 @@ input:focus, textarea:focus {
     padding-left: 15px;
 }
 
+/* Estilo para el editor de notas con viñetas */
+.notes-editor {
+    min-height: 100px;
+    padding: 12px;
+    outline: none;
+    overflow-y: auto;
+    line-height: 1.5;
+}
+
+.notes-editor:focus {
+    border-color: #3498db;
+    box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.2);
+}
+
+.notes-editor[placeholder]:empty::before {
+    content: attr(placeholder);
+    color: #95a5a6;
+}
+
+.bullet-point {
+    display: flex;
+    margin: 5px 0;
+}
+
+.bullet-point::before {
+    content: "•";
+    margin-right: 8px;
+    flex-shrink: 0;
+}
+
+/* Estilo para la vista previa de notas con viñetas */
+.notes-preview {
+    margin-top: 10px;
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    background-color: #f9f9f9;
+    min-height: 50px;
+    max-height: 200px;
+    overflow-y: auto;
+}
+
+.notes-preview .bullet-item {
+    display: flex;
+    margin: 5px 0;
+}
+
+.notes-preview .bullet-item::before {
+    content: "•";
+    margin-right: 8px;
+    flex-shrink: 0;
+    color: #2c3e50;
+}
+
 button {
     background-color: #3498db;
     color: white;

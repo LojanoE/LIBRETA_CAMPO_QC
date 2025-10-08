@@ -22,6 +22,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const locationDisplay = document.getElementById('location-display');
     const coordinatesSpan = document.getElementById('coordinates');
     const notesTextarea = document.getElementById('notes');
+    const notesPreview = document.getElementById('notes-preview');
     
     // Auto-populate current date and time
     const now = new Date();
@@ -81,6 +82,105 @@ document.addEventListener('DOMContentLoaded', function() {
             additionalInfoGroup.style.display = 'none';
         }
     });
+    
+    // Handle bullet point formatting in notes editor
+    notesEditor.addEventListener('input', function() {
+        formatNotesAsBullets();
+        // Update the hidden textarea with plain text
+        updateHiddenNotesField();
+    });
+    
+    // Handle Enter key to create new bullet points when appropriate
+    notesEditor.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter') {
+            // Prevent default to handle it ourselves
+            e.preventDefault();
+            
+            const selection = window.getSelection();
+            if (selection.rangeCount > 0) {
+                const range = selection.getRangeAt(0);
+                const node = range.startContainer;
+                const offset = range.startOffset;
+                
+                // Create a new div for the bullet point
+                const newDiv = document.createElement('div');
+                newDiv.className = 'bullet-point';
+                newDiv.textContent = ' ';
+                
+                // Insert the new div after current content
+                document.execCommand('insertHTML', false, '<div class="bullet-point"><br></div>');
+                
+                // Move cursor to the new line
+                const newRange = document.createRange();
+                newRange.selectNodeContents(newDiv);
+                newRange.collapse(true);
+                selection.removeAllRanges();
+                selection.addRange(newRange);
+            }
+        }
+    });
+    
+    // Function to format notes as bullet points
+    function formatNotesAsBullets() {
+        const content = notesEditor.innerHTML;
+        
+        // Simple approach: look for patterns that should be bullet points
+        // This could be improved based on specific requirements
+        let formattedContent = content.replace(/<div>(\s*•\s*.*?)<\/div>/g, '<div class="bullet-point">$1</div>');
+        
+        // If the content doesn't end with a closing tag, assume it's a new bullet point
+        // This is a simplified approach
+        if (!content.endsWith('</div>') && content.trim() !== '') {
+            // Add special handling for bullet point detection
+            formattedContent = formattedContent.replace(/<div>([^<]*)/g, function(match, text) {
+                if (text.trim().startsWith('• ')) {
+                    return `<div class="bullet-point">${text.trim().substring(2)}</div>`;
+                }
+                return match;
+            });
+        }
+        
+        notesEditor.innerHTML = formattedContent;
+    }
+    
+    // Function to update the hidden textarea with plain text
+    function updateHiddenNotesField() {
+        const content = notesEditor.innerHTML;
+        // Extract text content for the hidden field
+        const tempDiv = document.createElement('div');
+        tempDiv.innerHTML = content;
+        notesHidden.value = tempDiv.textContent || tempDiv.innerText || '';
+    }
+    
+    // Function to set content in the editor from plain text
+    function setNotesContent(text) {
+        if (!text) {
+            notesEditor.innerHTML = '';
+            notesHidden.value = '';
+            return;
+        }
+        
+        // Check if text contains newlines and format accordingly
+        if (text.includes('\n')) {
+            const lines = text.split('\n');
+            const formattedLines = lines.map(line => {
+                if (line.trim().startsWith('•')) {
+                    return `<div class="bullet-point">${line.trim().substring(1).trim()}</div>`;
+                } else {
+                    return `<div>${line}</div>`;
+                }
+            }).join('');
+            notesEditor.innerHTML = formattedLines;
+        } else {
+            if (text.trim().startsWith('•')) {
+                notesEditor.innerHTML = `<div class="bullet-point">${text.trim().substring(1).trim()}</div>`;
+            } else {
+                notesEditor.innerHTML = `<div>${text}</div>`;
+            }
+        }
+        
+        notesHidden.value = text;
+    }
     
     // Check for app updates
     function checkForUpdates() {
@@ -371,7 +471,7 @@ document.addEventListener('DOMContentLoaded', function() {
             workFront: document.getElementById('work-front').value,
             additionalInfo: document.getElementById('additional-info').value,
             observer: document.getElementById('observer').value,
-            notes: document.getElementById('notes').value,
+            notes: notesHidden.value, // Use hidden textarea value
             timestamp: new Date().toISOString()
         };
         
@@ -381,6 +481,10 @@ document.addEventListener('DOMContentLoaded', function() {
         // Reset form and auto-populate datetime
         form.reset();
         document.getElementById('date-time').value = new Date().toISOString().slice(0, 16);
+        
+        // Clear the notes editor
+        notesEditor.innerHTML = '';
+        notesHidden.value = '';
         
         // Hide location display after form reset
         locationDisplay.style.display = 'none';
@@ -551,7 +655,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const processedLines = lines.map(line => {
             // Check if the line starts with a bullet
             if (line.trim().startsWith('•')) {
-                return `<div class="bullet-item">${line.trim()}</div>`;
+                return `<div class="bullet-item">${line.trim().substring(1).trim()}</div>`; // Remove the bullet character and trim
             } else if (line.trim() !== '') {
                 return `<div class="regular-item">${line.trim()}</div>`;
             }
