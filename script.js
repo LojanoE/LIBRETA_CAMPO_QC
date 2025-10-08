@@ -370,7 +370,6 @@ document.addEventListener('DOMContentLoaded', function() {
             workFront: document.getElementById('work-front').value,
             additionalInfo: document.getElementById('additional-info').value,
             observer: document.getElementById('observer').value,
-            species: document.getElementById('species').value,
             notes: document.getElementById('notes').value,
             timestamp: new Date().toISOString()
         };
@@ -450,7 +449,6 @@ document.addEventListener('DOMContentLoaded', function() {
                     <div class="observation-detail"><strong>Tema Observado:</strong> ${observation.observer}</div>
                     ${observation.coordinates?.wgs84 ? `<div class="observation-detail"><strong>Coordenadas WGS84:</strong> ${observation.coordinates.wgs84.lat.toFixed(6)}, ${observation.coordinates.wgs84.lng.toFixed(6)}</div>` : ''}
                     ${observation.coordinates?.psad56 ? `<div class="observation-detail"><strong>PSAD56 UTM 17S:</strong> ${observation.coordinates.psad56.easting}E, ${observation.coordinates.psad56.northing}N</div>` : ''}
-                    ${observation.species ? `<div class="observation-detail"><strong>Especies:</strong> ${observation.species}</div>` : ''}
                     ${observation.additionalInfo ? `<div class="observation-detail"><strong>Info Adicional:</strong> ${observation.additionalInfo}</div>` : ''}
                     ${observation.notes ? `<div class="observation-detail full-width"><strong>Actividades Realizadas:</strong> ${observation.notes}</div>` : ''}
                 </div>
