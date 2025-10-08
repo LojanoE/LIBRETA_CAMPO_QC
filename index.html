@@ -1,61 +1,89 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="es">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Field Notebook App</title>
+    <title>Libreta de Campo</title>
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
     <div class="container">
         <header>
-            <h1>Field Notebook App</h1>
-            <p>Record and store your field observations locally</p>
+            <h1>Libreta de Campo</h1>
+            <p>Registra y almacena tus observaciones de campo localmente</p>
+            <div class="version-info">Versión: <span id="app-version">1.1.0</span></div>
+            <button id="refresh-btn" class="refresh-btn" title="Forzar actualización">🔄 Actualizar</button>
         </header>
         
         <main>
             <section class="form-section">
-                <h2>Record New Observation</h2>
+                <h2>Registrar Nueva Observación</h2>
                 <form id="observationForm">
                     <div class="form-group">
-                        <label for="location">Location:</label>
-                        <input type="text" id="location" name="location" required>
+                        <label for="date-time">Fecha y Hora:</label>
+                        <input type="datetime-local" id="date-time" name="datetime" required>
                     </div>
                     
                     <div class="form-group">
-                        <label for="date">Date:</label>
-                        <input type="date" id="date" name="date" required>
+                        <label for="location">Ubicación:</label>
+                        <div class="location-input-container">
+                            <input type="text" id="location" name="location" required placeholder="Ingrese ubicación o use GPS">
+                            <button type="button" id="get-location-btn" title="Obtener ubicación actual">📍 GPS</button>
+                        </div>
+                        <div id="location-display" class="location-display" style="display: none; margin-top: 5px; font-size: 0.9em; color: #666;">
+                            <span id="coordinates"></span>
+                        </div>
                     </div>
                     
                     <div class="form-group">
-                        <label for="observer">Observer:</label>
+                        <label for="work-front">Frente de Trabajo:</label>
+                        <select id="work-front" name="workfront" required>
+                            <option value="">Seleccione un frente</option>
+                            <option value="corona">Corona</option>
+                            <option value="estribo_izquierdo">Estríbo Izquierdo</option>
+                            <option value="estribo_derecho">Estríbo Derecho</option>
+                            <option value="banda_5">Banda 5</option>
+                            <option value="banda_6">Banda 6</option>
+                            <option value="dren_inclinado">Dren Inclinado</option>
+                            <option value="via">Vía</option>
+                            <option value="drenes_plataforma">Drenes y Plataforma</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group" id="additional-info-group" style="display: none;">
+                        <label for="additional-info">Información Adicional (Drenes y Plataforma):</label>
+                        <textarea id="additional-info" name="additionalinfo" rows="3" placeholder="Ingrese información adicional para drenes y plataforma"></textarea>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="observer">Observador:</label>
                         <input type="text" id="observer" name="observer" required>
                     </div>
                     
                     <div class="form-group">
-                        <label for="species">Species Observed:</label>
+                        <label for="species">Especies Observadas:</label>
                         <input type="text" id="species" name="species">
                     </div>
                     
                     <div class="form-group">
-                        <label for="quantity">Quantity:</label>
+                        <label for="quantity">Cantidad:</label>
                         <input type="number" id="quantity" name="quantity" min="0">
                     </div>
                     
                     <div class="form-group">
-                        <label for="notes">Notes:</label>
-                        <textarea id="notes" name="notes" rows="4"></textarea>
+                        <label for="notes">Notas Adicionales:</label>
+                        <textarea id="notes" name="notes" rows="4" placeholder="Descripción detallada de la observación"></textarea>
                     </div>
                     
-                    <button type="submit">Save Observation</button>
+                    <button type="submit">Guardar Observación</button>
                 </form>
             </section>
             
             <section class="data-section">
-                <h2>Saved Observations</h2>
+                <h2>Observaciones Guardadas</h2>
                 <div class="controls">
-                    <button id="exportBtn">Export Data</button>
-                    <button id="clearBtn">Clear All Data</button>
+                    <button id="exportBtn">Exportar Datos</button>
+                    <button id="clearBtn">Limpiar Todos los Datos</button>
                 </div>
                 <div id="observationsList"></div>
             </section>
