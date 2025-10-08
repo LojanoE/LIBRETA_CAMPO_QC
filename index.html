@@ -55,6 +55,22 @@
                             <input type="hidden" id="work-front" name="workfront" required>
                         </div>
                     </div>
+
+                    <div class="form-group">
+                        <label>Tipo de Observación:</label>
+                        <div class="dropdown-card" id="tag-dropdown">
+                            <div class="dropdown-header" id="tag-header">
+                                <span id="selected-tag">Seleccione un tipo</span>
+                                <span class="dropdown-arrow">▼</span>
+                            </div>
+                            <div class="dropdown-options" id="tag-options" style="display: none;">
+                                <div class="dropdown-option tag-option" data-value="rutina"><span class="tag-color" style="background-color: #3498db;"></span>Rutina</div>
+                                <div class="dropdown-option tag-option" data-value="novedad"><span class="tag-color" style="background-color: #f1c40f;"></span>Novedad</div>
+                                <div class="dropdown-option tag-option" data-value="importante"><span class="tag-color" style="background-color: #e74c3c;"></span>Importante</div>
+                            </div>
+                            <input type="hidden" id="tag" name="tag" required>
+                        </div>
+                    </div>
                     
                     <div class="form-group" id="additional-info-group" style="display: none;">
                         <label for="additional-info">Información Adicional (Drenes y Plataforma):</label>

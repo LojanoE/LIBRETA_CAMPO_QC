@@ -200,6 +200,19 @@ input:focus, textarea:focus {
     font-weight: bold;
 }
 
+.tag-option {
+    display: flex;
+    align-items: center;
+}
+
+.tag-color {
+    width: 15px;
+    height: 15px;
+    border-radius: 50%;
+    margin-right: 10px;
+    flex-shrink: 0;
+}
+
 
 
 /* Estilo para las viñetas en las observaciones */
@@ -358,6 +371,13 @@ button:active {
 
 .delete-btn:hover {
     background-color: #c0392b;
+}
+
+.tag-display {
+    color: white;
+    padding: 3px 8px;
+    border-radius: 4px;
+    font-size: 0.9em;
 }
 
 .no-observations {

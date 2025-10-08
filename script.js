@@ -26,6 +26,10 @@ document.addEventListener('DOMContentLoaded', function() {
     const workFrontHeader = document.getElementById('work-front-header');
     const workFrontOptions = document.getElementById('work-front-options');
     const selectedWorkFront = document.getElementById('selected-work-front');
+    const tagSelect = document.getElementById('tag'); // hidden input
+    const tagHeader = document.getElementById('tag-header');
+    const tagOptions = document.getElementById('tag-options');
+    const selectedTag = document.getElementById('selected-tag');
     const additionalInfoGroup = document.getElementById('additional-info-group');
     const getLocationBtn = document.getElementById('get-location-btn');
     const locationInput = document.getElementById('location');
@@ -55,45 +59,55 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Dropdown functionality for work front
     workFrontHeader.addEventListener('click', function() {
-        const dropdown = document.getElementById('work-front-dropdown');
-        const options = document.getElementById('work-front-options');
-        
+        toggleDropdown('work-front-dropdown');
+    });
+
+    // Dropdown functionality for tags
+    tagHeader.addEventListener('click', function() {
+        toggleDropdown('tag-dropdown');
+    });
+
+    // Function to toggle dropdown visibility
+    function toggleDropdown(dropdownId) {
+        const dropdown = document.getElementById(dropdownId);
+        const options = dropdown.querySelector('.dropdown-options');
         dropdown.classList.toggle('active');
         options.style.display = options.style.display === 'block' ? 'none' : 'block';
-    });
+    }
     
     // Close dropdown when clicking outside
     document.addEventListener('click', function(event) {
-        const dropdown = document.getElementById('work-front-dropdown');
-        const options = document.getElementById('work-front-options');
-        
-        if (!dropdown.contains(event.target)) {
-            dropdown.classList.remove('active');
-            options.style.display = 'none';
-        }
+        closeAllDropdowns(event);
     });
+
+    function closeAllDropdowns(event) {
+        const dropdowns = document.querySelectorAll('.dropdown-card');
+        dropdowns.forEach(dropdown => {
+            if (!dropdown.contains(event.target)) {
+                dropdown.classList.remove('active');
+                dropdown.querySelector('.dropdown-options').style.display = 'none';
+            }
+        });
+    }
     
-    // Handle option selection
+    // Handle option selection for all dropdowns
     document.querySelectorAll('.dropdown-option').forEach(option => {
         option.addEventListener('click', function() {
             const value = this.getAttribute('data-value');
             const text = this.textContent;
-            
-            // Update the hidden input
-            workFrontSelect.value = value;
-            
-            // Update the display
-            selectedWorkFront.textContent = text;
-            
-            // Close the dropdown
-            const dropdown = document.getElementById('work-front-dropdown');
-            const options = document.getElementById('work-front-options');
-            
-            dropdown.classList.remove('active');
-            options.style.display = 'none';
-            
-            // Trigger change event to handle additional info
-            workFrontSelect.dispatchEvent(new Event('change'));
+            const dropdown = this.closest('.dropdown-card');
+            const hiddenInput = dropdown.querySelector('input[type="hidden"]');
+            const selectedDisplay = dropdown.querySelector('.dropdown-header span:first-child');
+
+            hiddenInput.value = value;
+            selectedDisplay.textContent = text;
+
+            closeAllDropdowns({target: document.body}); // Close all dropdowns
+
+            // Trigger change event to handle additional info for work front
+            if (hiddenInput.id === 'work-front') {
+                hiddenInput.dispatchEvent(new Event('change'));
+            }
         });
     });
     
@@ -390,6 +404,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 psad56: extractPSAD56Coords(coordinatesSpan.textContent)
             },
             workFront: document.getElementById('work-front').value,
+            tag: document.getElementById('tag').value,
             additionalInfo: document.getElementById('additional-info').value,
             notes: notesTextarea.value, // Use textarea value
             timestamp: new Date().toISOString()
@@ -462,11 +477,15 @@ document.addEventListener('DOMContentLoaded', function() {
             
             // Format work front for display
             const workFrontDisplay = formatWorkFront(observation.workFront);
+            const tagDisplay = formatTag(observation.tag);
+
+            observationCard.style.borderLeftColor = tagDisplay.color;
             
             observationCard.innerHTML = `
                 <h3>${observation.location} <small>(${formatDateTime(observation.datetime)})</small></h3>
                 <div class="observation-details">
                     <div class="observation-detail"><strong>Frente de Trabajo:</strong> ${workFrontDisplay}</div>
+                    <div class="observation-detail"><strong>Tipo:</strong> <span class="tag-display" style="background-color: ${tagDisplay.color}">${tagDisplay.name}</span></div>
                     ${observation.coordinates?.wgs84 ? `<div class="observation-detail"><strong>Coordenadas WGS84:</strong> ${observation.coordinates.wgs84.lat.toFixed(6)}, ${observation.coordinates.wgs84.lng.toFixed(6)}</div>` : ''}
                     ${observation.coordinates?.psad56 ? `<div class="observation-detail"><strong>PSAD56 UTM 17S:</strong> ${observation.coordinates.psad56.easting}E, ${observation.coordinates.psad56.northing}N</div>` : ''}
                     ${observation.additionalInfo ? `<div class="observation-detail"><strong>Info Adicional:</strong> ${observation.additionalInfo}</div>` : ''}
@@ -601,6 +620,19 @@ document.addEventListener('DOMContentLoaded', function() {
                 return 'Drenes y Plataforma';
             default:
                 return workFrontValue;
+        }
+    }
+
+    function formatTag(tagValue) {
+        switch(tagValue) {
+            case 'importante':
+                return { name: 'Importante', color: '#e74c3c' };
+            case 'novedad':
+                return { name: 'Novedad', color: '#f1c40f' };
+            case 'rutina':
+                return { name: 'Rutina', color: '#3498db' };
+            default:
+                return { name: tagValue, color: '#bdc3c7' };
         }
     }
 });
