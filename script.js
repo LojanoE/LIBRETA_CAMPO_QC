@@ -576,8 +576,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 return 'Banda 6';
             case 'dren_inclinado':
                 return 'Dren Inclinado';
-            case 'via':
-                return 'Vía';
+            case 'talud':
+                return 'Talud';
             case 'drenes_plataforma':
                 return 'Drenes y Plataforma';
             default:
