@@ -134,6 +134,72 @@ input:focus, textarea:focus {
     border-left: 3px solid #3498db;
 }
 
+/* Estilo para el componente de tarjeta desplegable */
+.dropdown-card {
+    position: relative;
+    width: 100%;
+}
+
+.dropdown-header {
+    padding: 12px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    background-color: white;
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    transition: border-color 0.3s;
+}
+
+.dropdown-header:hover {
+    border-color: #3498db;
+}
+
+.dropdown-header:focus {
+    outline: none;
+    border-color: #3498db;
+    box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.2);
+}
+
+.dropdown-arrow {
+    transition: transform 0.3s;
+}
+
+.dropdown-card.active .dropdown-arrow {
+    transform: rotate(180deg);
+}
+
+.dropdown-options {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background-color: white;
+    border: 1px solid #ddd;
+    border-top: none;
+    border-radius: 0 0 5px 5px;
+    max-height: 200px;
+    overflow-y: auto;
+    z-index: 1000;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.dropdown-option {
+    padding: 12px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.dropdown-option:hover {
+    background-color: #f8f9fa;
+}
+
+.dropdown-option.selected {
+    background-color: #e3f2fd;
+    font-weight: bold;
+}
+
 button {
     background-color: #3498db;
     color: white;

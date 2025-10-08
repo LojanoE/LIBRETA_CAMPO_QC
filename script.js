@@ -12,7 +12,10 @@ document.addEventListener('DOMContentLoaded', function() {
     const exportBtn = document.getElementById('exportBtn');
     const clearBtn = document.getElementById('clearBtn');
     const refreshBtn = document.getElementById('refresh-btn');
-    const workFrontSelect = document.getElementById('work-front');
+    const workFrontSelect = document.getElementById('work-front'); // hidden input
+    const workFrontHeader = document.getElementById('work-front-header');
+    const workFrontOptions = document.getElementById('work-front-options');
+    const selectedWorkFront = document.getElementById('selected-work-front');
     const additionalInfoGroup = document.getElementById('additional-info-group');
     const getLocationBtn = document.getElementById('get-location-btn');
     const locationInput = document.getElementById('location');
@@ -24,6 +27,50 @@ document.addEventListener('DOMContentLoaded', function() {
     // Format to YYYY-MM-DDTHH:MM for datetime-local input
     const formattedDateTime = now.toISOString().slice(0, 16);
     document.getElementById('date-time').value = formattedDateTime;
+    
+    // Dropdown functionality for work front
+    workFrontHeader.addEventListener('click', function() {
+        const dropdown = document.getElementById('work-front-dropdown');
+        const options = document.getElementById('work-front-options');
+        
+        dropdown.classList.toggle('active');
+        options.style.display = options.style.display === 'block' ? 'none' : 'block';
+    });
+    
+    // Close dropdown when clicking outside
+    document.addEventListener('click', function(event) {
+        const dropdown = document.getElementById('work-front-dropdown');
+        const options = document.getElementById('work-front-options');
+        
+        if (!dropdown.contains(event.target)) {
+            dropdown.classList.remove('active');
+            options.style.display = 'none';
+        }
+    });
+    
+    // Handle option selection
+    document.querySelectorAll('.dropdown-option').forEach(option => {
+        option.addEventListener('click', function() {
+            const value = this.getAttribute('data-value');
+            const text = this.textContent;
+            
+            // Update the hidden input
+            workFrontSelect.value = value;
+            
+            // Update the display
+            selectedWorkFront.textContent = text;
+            
+            // Close the dropdown
+            const dropdown = document.getElementById('work-front-dropdown');
+            const options = document.getElementById('work-front-options');
+            
+            dropdown.classList.remove('active');
+            options.style.display = 'none';
+            
+            // Trigger change event to handle additional info
+            workFrontSelect.dispatchEvent(new Event('change'));
+        });
+    });
     
     // Show/hide additional info field based on work front selection
     workFrontSelect.addEventListener('change', function() {
@@ -324,7 +371,6 @@ document.addEventListener('DOMContentLoaded', function() {
             additionalInfo: document.getElementById('additional-info').value,
             observer: document.getElementById('observer').value,
             species: document.getElementById('species').value,
-            quantity: document.getElementById('quantity').value,
             notes: document.getElementById('notes').value,
             timestamp: new Date().toISOString()
         };
@@ -401,13 +447,12 @@ document.addEventListener('DOMContentLoaded', function() {
                 <h3>${observation.location} <small>(${formatDateTime(observation.datetime)})</small></h3>
                 <div class="observation-details">
                     <div class="observation-detail"><strong>Frente de Trabajo:</strong> ${workFrontDisplay}</div>
-                    <div class="observation-detail"><strong>Observador:</strong> ${observation.observer}</div>
+                    <div class="observation-detail"><strong>Tema Observado:</strong> ${observation.observer}</div>
                     ${observation.coordinates?.wgs84 ? `<div class="observation-detail"><strong>Coordenadas WGS84:</strong> ${observation.coordinates.wgs84.lat.toFixed(6)}, ${observation.coordinates.wgs84.lng.toFixed(6)}</div>` : ''}
                     ${observation.coordinates?.psad56 ? `<div class="observation-detail"><strong>PSAD56 UTM 17S:</strong> ${observation.coordinates.psad56.easting}E, ${observation.coordinates.psad56.northing}N</div>` : ''}
                     ${observation.species ? `<div class="observation-detail"><strong>Especies:</strong> ${observation.species}</div>` : ''}
-                    ${observation.quantity ? `<div class="observation-detail"><strong>Cantidad:</strong> ${observation.quantity}</div>` : ''}
                     ${observation.additionalInfo ? `<div class="observation-detail"><strong>Info Adicional:</strong> ${observation.additionalInfo}</div>` : ''}
-                    ${observation.notes ? `<div class="observation-detail full-width"><strong>Notas:</strong> ${observation.notes}</div>` : ''}
+                    ${observation.notes ? `<div class="observation-detail full-width"><strong>Actividades Realizadas:</strong> ${observation.notes}</div>` : ''}
                 </div>
                 <button class="delete-btn" data-id="${observation.id}">Eliminar</button>
             `;

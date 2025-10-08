@@ -36,43 +36,44 @@
                     </div>
                     
                     <div class="form-group">
-                        <label for="work-front">Frente de Trabajo:</label>
-                        <select id="work-front" name="workfront" required>
-                            <option value="">Seleccione un frente</option>
-                            <option value="corona">Corona</option>
-                            <option value="estribo_izquierdo">Estríbo Izquierdo</option>
-                            <option value="estribo_derecho">Estríbo Derecho</option>
-                            <option value="banda_5">Banda 5</option>
-                            <option value="banda_6">Banda 6</option>
-                            <option value="dren_inclinado">Dren Inclinado</option>
-                            <option value="via">Vía</option>
-                            <option value="drenes_plataforma">Drenes y Plataforma</option>
-                        </select>
+                        <label>Frente de Trabajo:</label>
+                        <div class="dropdown-card" id="work-front-dropdown">
+                            <div class="dropdown-header" id="work-front-header">
+                                <span id="selected-work-front">Seleccione un frente</span>
+                                <span class="dropdown-arrow">▼</span>
+                            </div>
+                            <div class="dropdown-options" id="work-front-options" style="display: none;">
+                                <div class="dropdown-option" data-value="corona">Corona</div>
+                                <div class="dropdown-option" data-value="estribo_izquierdo">Estríbo Izquierdo</div>
+                                <div class="dropdown-option" data-value="estribo_derecho">Estríbo Derecho</div>
+                                <div class="dropdown-option" data-value="banda_5">Banda 5</div>
+                                <div class="dropdown-option" data-value="banda_6">Banda 6</div>
+                                <div class="dropdown-option" data-value="dren_inclinado">Dren Inclinado</div>
+                                <div class="dropdown-option" data-value="via">Vía</div>
+                                <div class="dropdown-option" data-value="drenes_plataforma">Drenes y Plataforma</div>
+                            </div>
+                            <input type="hidden" id="work-front" name="workfront" required>
+                        </div>
                     </div>
                     
                     <div class="form-group" id="additional-info-group" style="display: none;">
                         <label for="additional-info">Información Adicional (Drenes y Plataforma):</label>
-                        <textarea id="additional-info" name="additionalinfo" rows="3" placeholder="Ingrese información adicional para drenes y plataforma"></textarea>
+                        <textarea id="additional-info" name="additionalinfo" rows="3" class="form-control" placeholder="Ingrese información adicional para drenes y plataforma"></textarea>
                     </div>
                     
                     <div class="form-group">
-                        <label for="observer">Observador:</label>
-                        <input type="text" id="observer" name="observer" required>
+                        <label for="observer">Tema Observado:</label>
+                        <input type="text" id="observer" name="observer" required class="form-control">
                     </div>
                     
                     <div class="form-group">
                         <label for="species">Especies Observadas:</label>
-                        <input type="text" id="species" name="species">
+                        <input type="text" id="species" name="species" class="form-control">
                     </div>
                     
                     <div class="form-group">
-                        <label for="quantity">Cantidad:</label>
-                        <input type="number" id="quantity" name="quantity" min="0">
-                    </div>
-                    
-                    <div class="form-group">
-                        <label for="notes">Notas Adicionales:</label>
-                        <textarea id="notes" name="notes" rows="4" placeholder="Descripción detallada de la observación"></textarea>
+                        <label for="notes">Actividades Realizadas:</label>
+                        <textarea id="notes" name="notes" rows="4" class="form-control" placeholder="Descripción detallada de las actividades realizadas"></textarea>
                     </div>
                     
                     <button type="submit">Guardar Observación</button>
