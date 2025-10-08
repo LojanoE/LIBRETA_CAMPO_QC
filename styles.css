@@ -200,6 +200,30 @@ input:focus, textarea:focus {
     font-weight: bold;
 }
 
+
+
+/* Estilo para las viñetas en las observaciones */
+.notes-content {
+    margin-top: 5px;
+}
+
+.bullet-item {
+    display: flex;
+    align-items: flex-start;
+    margin: 3px 0;
+}
+
+.bullet-item::before {
+    content: "•";
+    margin-right: 8px;
+    flex-shrink: 0;
+}
+
+.regular-item {
+    margin: 3px 0;
+    padding-left: 15px;
+}
+
 button {
     background-color: #3498db;
     color: white;

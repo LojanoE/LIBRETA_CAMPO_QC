@@ -21,6 +21,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const locationInput = document.getElementById('location');
     const locationDisplay = document.getElementById('location-display');
     const coordinatesSpan = document.getElementById('coordinates');
+    const notesTextarea = document.getElementById('notes');
     
     // Auto-populate current date and time
     const now = new Date();
@@ -450,7 +451,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     ${observation.coordinates?.wgs84 ? `<div class="observation-detail"><strong>Coordenadas WGS84:</strong> ${observation.coordinates.wgs84.lat.toFixed(6)}, ${observation.coordinates.wgs84.lng.toFixed(6)}</div>` : ''}
                     ${observation.coordinates?.psad56 ? `<div class="observation-detail"><strong>PSAD56 UTM 17S:</strong> ${observation.coordinates.psad56.easting}E, ${observation.coordinates.psad56.northing}N</div>` : ''}
                     ${observation.additionalInfo ? `<div class="observation-detail"><strong>Info Adicional:</strong> ${observation.additionalInfo}</div>` : ''}
-                    ${observation.notes ? `<div class="observation-detail full-width"><strong>Actividades Realizadas:</strong> ${observation.notes}</div>` : ''}
+                    ${observation.notes ? `<div class="observation-detail full-width"><strong>Actividades Realizadas:</strong><div class="notes-content">${formatNotesWithBullets(observation.notes)}</div></div>` : ''}
                 </div>
                 <button class="delete-btn" data-id="${observation.id}">Eliminar</button>
             `;
@@ -537,6 +538,27 @@ document.addEventListener('DOMContentLoaded', function() {
             minute: '2-digit'
         };
         return date.toLocaleDateString('es-ES', options);
+    }
+    
+    // Helper function to format notes with bullet points as HTML list
+    function formatNotesWithBullets(notes) {
+        if (!notes) return '';
+        
+        // Split by new lines
+        const lines = notes.split('\n');
+        
+        // Process each line
+        const processedLines = lines.map(line => {
+            // Check if the line starts with a bullet
+            if (line.trim().startsWith('•')) {
+                return `<div class="bullet-item">${line.trim()}</div>`;
+            } else if (line.trim() !== '') {
+                return `<div class="regular-item">${line.trim()}</div>`;
+            }
+            return '';
+        });
+        
+        return processedLines.join('\n');
     }
     
     // Helper function to format work front for display
