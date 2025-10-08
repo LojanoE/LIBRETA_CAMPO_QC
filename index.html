@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Field Notebook App</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Field Notebook App</h1>
+            <p>Record and store your field observations locally</p>
+        </header>
+        
+        <main>
+            <section class="form-section">
+                <h2>Record New Observation</h2>
+                <form id="observationForm">
+                    <div class="form-group">
+                        <label for="location">Location:</label>
+                        <input type="text" id="location" name="location" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="date">Date:</label>
+                        <input type="date" id="date" name="date" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="observer">Observer:</label>
+                        <input type="text" id="observer" name="observer" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="species">Species Observed:</label>
+                        <input type="text" id="species" name="species">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="quantity">Quantity:</label>
+                        <input type="number" id="quantity" name="quantity" min="0">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="notes">Notes:</label>
+                        <textarea id="notes" name="notes" rows="4"></textarea>
+                    </div>
+                    
+                    <button type="submit">Save Observation</button>
+                </form>
+            </section>
+            
+            <section class="data-section">
+                <h2>Saved Observations</h2>
+                <div class="controls">
+                    <button id="exportBtn">Export Data</button>
+                    <button id="clearBtn">Clear All Data</button>
+                </div>
+                <div id="observationsList"></div>
+            </section>
+        </main>
+    </div>
+    
+    <script src="script.js"></script>
+</body>
+</html>
