@@ -216,7 +216,6 @@ document.addEventListener('DOMContentLoaded', function() {
     modalMapContainer.addEventListener('touchmove', (e) => {
         if (!isModalDragging) return;
         hasDragged = true;
-        e.preventDefault();
         const x = e.touches[0].pageX - modalMapContainer.offsetLeft;
         const y = e.touches[0].pageY - modalMapContainer.offsetTop;
         const walkX = (x - modalDragStartX);
