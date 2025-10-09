@@ -78,12 +78,26 @@ document.addEventListener('DOMContentLoaded', function() {
     function updatePinPosition() {
         if (!truePinPosition) return;
 
-        const left = truePinPosition.x * modalZoomLevel;
-        const top = truePinPosition.y * modalZoomLevel;
+        // With zoom disabled, use direct coordinates without scaling
+        const left = truePinPosition.x;
+        const top = truePinPosition.y;
 
-        modalMapPin.style.left = `${left}px`;
-        modalMapPin.style.top = `${top}px`;
-        modalMapPin.style.transform = `translate(-50%, -100%) scale(${1 / modalZoomLevel})`;
+        // Get the dimensions of the image to ensure pin stays within bounds
+        const imgWidth = modalMapImage.naturalWidth || modalMapImage.width;
+        const imgHeight = modalMapImage.naturalHeight || modalMapImage.height;
+        
+        // Calculate maximum allowed positions
+        const maxLeft = imgWidth;
+        const maxTop = imgHeight;
+        
+        // Ensure the pin stays within the image bounds
+        const boundedLeft = Math.max(0, Math.min(left, maxLeft));
+        const boundedTop = Math.max(0, Math.min(top, maxTop));
+
+        modalMapPin.style.left = `${boundedLeft}px`;
+        modalMapPin.style.top = `${boundedTop}px`;
+        // With zoom disabled, keep transform at normal scale
+        modalMapPin.style.transform = 'translate(-50%, -100%)';
         modalMapPin.style.display = 'block';
     }
 
@@ -94,26 +108,33 @@ document.addEventListener('DOMContentLoaded', function() {
         modalMapPin.style.display = 'none';
         selectedPinCoords = null;
         truePinPosition = null;
+        // Disable zoom functionality
         modalZoomLevel = 1;
         modalMapImage.style.transform = 'scale(1)';
         modalMapContainer.scrollTop = 0;
         modalMapContainer.scrollLeft = 0;
+        // Hide zoom controls
+        document.querySelector('.modal-map-controls').style.display = 'none';
     });
 
     closeMapModalBtn.addEventListener('click', () => {
         mapModal.style.display = 'none';
+        // Show zoom controls again when modal is closed
+        document.querySelector('.modal-map-controls').style.display = 'flex';
     });
 
     modalZoomInBtn.addEventListener('click', () => {
-        modalZoomLevel = Math.min(modalZoomLevel + 0.3, 4);
-        modalMapImage.style.transform = `scale(${modalZoomLevel})`;
-        updatePinPosition();
+        // Disable zoom functionality - keep zoom level at 1
+        // modalZoomLevel = Math.min(modalZoomLevel + 0.3, 4);
+        // modalMapImage.style.transform = `scale(${modalZoomLevel})`;
+        // updatePinPosition();
     });
 
     modalZoomOutBtn.addEventListener('click', () => {
-        modalZoomLevel = Math.max(modalZoomLevel - 0.3, 1);
-        modalMapImage.style.transform = `scale(${modalZoomLevel})`;
-        updatePinPosition();
+        // Disable zoom functionality - keep zoom level at 1
+        // modalZoomLevel = Math.max(modalZoomLevel - 0.3, 1);
+        // modalMapImage.style.transform = `scale(${modalZoomLevel})`;
+        // updatePinPosition();
     });
 
     function handlePinPlacement(e) {
@@ -124,8 +145,9 @@ document.addEventListener('DOMContentLoaded', function() {
         const xOnContainer = clientX - rect.left;
         const yOnContainer = clientY - rect.top;
 
-        const xOnImage = (xOnContainer + modalMapContainer.scrollLeft) / modalZoomLevel;
-        const yOnImage = (yOnContainer + modalMapContainer.scrollTop) / modalZoomLevel;
+        // With zoom disabled, modalZoomLevel = 1, so no division needed
+        const xOnImage = xOnContainer + modalMapContainer.scrollLeft;
+        const yOnImage = yOnContainer + modalMapContainer.scrollTop;
 
         // Boundary check
         const imgWidth = modalMapImage.naturalWidth;
@@ -140,10 +162,14 @@ document.addEventListener('DOMContentLoaded', function() {
             return;
         }
 
-        truePinPosition = { x: xOnImage, y: yOnImage };
+        // Ensure the position is within bounds
+        const boundedX = Math.max(0, Math.min(xOnImage, imgWidth));
+        const boundedY = Math.max(0, Math.min(yOnImage, imgHeight));
+        
+        truePinPosition = { x: boundedX, y: boundedY };
         updatePinPosition();
 
-        const psad56Coords = imageToPSAD56(xOnImage, yOnImage);
+        const psad56Coords = imageToPSAD56(boundedX, boundedY);
 
         if (psad56Coords) {
             selectedPinCoords = psad56Coords;
@@ -863,8 +889,12 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (imgCoords) {
                     const marker = document.createElement('div');
                     marker.className = 'map-marker';
-                    marker.style.left = imgCoords.x + 'px';
-                    marker.style.top = imgCoords.y + 'px';
+                    // Ensure the marker stays within the map bounds
+                    const boundedX = Math.max(0, Math.min(imgCoords.x, mapImage.clientWidth || mapImage.width));
+                    const boundedY = Math.max(0, Math.min(imgCoords.y, mapImage.clientHeight || mapImage.height));
+                    
+                    marker.style.left = boundedX + 'px';
+                    marker.style.top = boundedY + 'px';
                     marker.style.color = formatTag(obs.tag).color;
                     
                     const icons = { 'importante': 'fa-exclamation-triangle', 'novedad': 'fa-exclamation-circle', 'rutina': 'fa-check-circle' };

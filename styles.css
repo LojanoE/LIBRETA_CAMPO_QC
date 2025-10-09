@@ -1167,6 +1167,11 @@ html, body {
     height: 40px;
     font-size: 1.2rem;
 }
+
+/* Hide zoom controls in the map modal since zoom is disabled */
+.modal-map-controls[style*="display: none"] {
+    display: none !important;
+}
 .map-controls {
   position: absolute;
   top: 1rem;
@@ -1919,6 +1924,35 @@ html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
 #map-modal .modal-content {
     max-width: 90vw;
     height: 90vh;
+}
+
+/* Position the confirm button closer to the map */
+/* Position confirm button as an overlay on the map for better accessibility */
+#modal-map-container {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    overflow: auto;
+}
+
+#confirm-location-btn {
+    position: absolute;
+    bottom: 10px;
+    right: 10px;
+    z-index: 100;                /* Higher than other map overlays */
+    margin: 0;
+}
+
+/* Keep coordinates display in footer but make it more compact */
+#modal-coordinates-display {
+    text-align: left;
+    font-size: 0.9rem;
+    word-break: break-word;
+}
+
+/* Adjust positioning for confirm button in map modal */
+#confirm-location-btn {
+    margin-left: 10px; /* Add some space from coordinates display */
 }
 
 #modal-map-container {
