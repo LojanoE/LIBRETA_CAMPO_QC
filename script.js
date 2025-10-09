@@ -67,7 +67,60 @@ document.addEventListener('DOMContentLoaded', function() {
         const modalMapImage = document.getElementById('modal-map-image');
         const modalMapPin = document.getElementById('modal-map-pin');
         const confirmLocationBtn = document.getElementById('confirm-location-btn');
+        const modalCoordinatesDisplay = document.getElementById('modal-coordinates-display');
         let selectedPinCoords = null;
+
+        placePinBtn.addEventListener('click', () => {
+            mapModal.style.display = 'block';
+            confirmLocationBtn.disabled = true;
+            modalCoordinatesDisplay.textContent = 'Seleccione un punto en el mapa...';
+            modalMapPin.style.display = 'none';
+            selectedPinCoords = null;
+        });
+
+        closeMapModalBtn.addEventListener('click', () => {
+            mapModal.style.display = 'none';
+        });
+
+        modalMapContainer.addEventListener('click', (e) => {
+            if (e.target !== modalMapImage) return;
+
+            const rect = modalMapImage.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+
+            modalMapPin.style.left = `${x}px`;
+            modalMapPin.style.top = `${y}px`;
+            modalMapPin.style.display = 'block';
+
+            const psad56Coords = imageToPSAD56(x, y);
+
+            if (psad56Coords) {
+                selectedPinCoords = psad56Coords;
+                modalCoordinatesDisplay.textContent = `PSAD56: ${psad56Coords.x.toFixed(2)}E, ${psad56Coords.y.toFixed(2)}N`;
+                confirmLocationBtn.disabled = false;
+            } else {
+                selectedPinCoords = null;
+                modalCoordinatesDisplay.textContent = 'Punto fuera de los límites del mapa.';
+                confirmLocationBtn.disabled = true;
+            }
+        });
+
+        confirmLocationBtn.addEventListener('click', () => {
+            if (selectedPinCoords) {
+                locationInput.value = `PSAD56: ${selectedPinCoords.x.toFixed(3)}, ${selectedPinCoords.y.toFixed(3)}`;
+                coordinatesSpan.innerHTML = `<strong>PSAD56 UTM 17S:</strong> ${selectedPinCoords.x.toFixed(0)}E, ${selectedPinCoords.y.toFixed(0)}N`;
+                locationDisplay.classList.add('show');
+                showMessage('Ubicación seleccionada desde el mapa.');
+                mapModal.style.display = 'none';
+            }
+        });
+
+        window.addEventListener('click', (event) => {
+            if (event.target == mapModal) {
+                mapModal.style.display = 'none';
+            }
+        });
         
         // Garantizar que la funcionalidad PIN funcione por completo
         setTimeout(function() {

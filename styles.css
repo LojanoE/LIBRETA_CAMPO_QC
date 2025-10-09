@@ -1921,6 +1921,7 @@ html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
     display: none;
     transform: translate(-50%, -100%);
     pointer-events: none;
+    z-index: 10;
 }
 
 #modal-map-pin i {
