@@ -784,8 +784,8 @@ document.addEventListener('DOMContentLoaded', function() {
     function formatWorkFront(workFrontValue) {
         const fronts = {
             'corona': 'Corona',
-            'estribo_izquierdo': 'Estríbo Izquierdo',
-            'estribo_derecho': 'Estríbo Derecho',
+            'estribo_izquierdo': 'Estribo Izquierdo',
+            'estribo_derecho': 'Estribo Derecho',
             'banda_5': 'Banda 5',
             'banda_6': 'Banda 6',
             'dren_inclinado': 'Dren Inclinado',
