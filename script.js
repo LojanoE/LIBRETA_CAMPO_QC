@@ -57,11 +57,14 @@ document.addEventListener('DOMContentLoaded', function() {
     const modalMapPin = document.getElementById('modal-map-pin');
     const confirmLocationBtn = document.getElementById('confirm-location-btn');
     const modalCoordinatesDisplay = document.getElementById('modal-coordinates-display');
+    const modalZoomInBtn = document.getElementById('modal-zoom-in');
+    const modalZoomOutBtn = document.getElementById('modal-zoom-out');
     
     // Map related variables
     let mapInitialized = false;
     let mapContainer, mapImage, mapOverlay;
     let zoomLevel = 1;
+    let modalZoomLevel = 1;
     const mapBounds = { minX: 780470.010, maxX: 782341.423, minY: 9602159.372, maxY: 9603738.377 };
     let selectedPinCoords = null;
 
@@ -72,6 +75,18 @@ document.addEventListener('DOMContentLoaded', function() {
         modalCoordinatesDisplay.textContent = 'Seleccione un punto en el mapa...';
         modalMapPin.style.display = 'none';
         selectedPinCoords = null;
+        modalZoomLevel = 1;
+        modalMapImage.style.transform = 'scale(1)';
+    });
+
+    modalZoomInBtn.addEventListener('click', () => {
+        modalZoomLevel = Math.min(modalZoomLevel + 0.2, 3);
+        modalMapImage.style.transform = `scale(${modalZoomLevel})`;
+    });
+
+    modalZoomOutBtn.addEventListener('click', () => {
+        modalZoomLevel = Math.max(modalZoomLevel - 0.2, 0.5);
+        modalMapImage.style.transform = `scale(${modalZoomLevel})`;
     });
 
     closeMapModalBtn.addEventListener('click', () => {

@@ -1143,12 +1143,21 @@ html, body {
   border-top-color: currentColor;
 }
 
-.map-marker i {
-  font-size: 1.5rem;
-  color: inherit;
-  text-shadow: 0 0 5px rgba(0,0,0,0.5);
+.map-controls i {
+    font-size: 1.2rem;
 }
 
+.modal-map-controls {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    z-index: 15;
+}
+
+.modal-map-controls .btn {
+    padding: 0.5rem;
+    line-height: 1;
+}
 .map-controls {
   position: absolute;
   top: 1rem;
