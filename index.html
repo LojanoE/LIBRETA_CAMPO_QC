@@ -3,102 +3,287 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Libreta de Campo</title>
+    <title>Libreta de Campo - QC</title>
     <link rel="stylesheet" href="styles.css" id="main-styles">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 <body>
-    <div class="container">
-        <header>
-            <h1>Libreta de Campo Control de Calidad - QC</h1>
-            <p>Registra y almacena tus observaciones de campo localmente</p>
-            <div class="version-info">Versión: <span id="app-version"></span></div>
-            <button id="refresh-btn" class="refresh-btn" title="Forzar actualización">🔄 Actualizar</button>
+    <div class="container card soft">
+        <!-- Header con logos y título -->
+        <header class="main-header">
+            <div class="logo-container">
+                <img src="RAC-FOT.jpg" alt="Logo" class="logo">
+            </div>
+            <div class="header-content">
+                <h1><i class="fas fa-book"></i> Libreta de Campo - QC</h1>
+                <p class="note">Registra y almacena tus observaciones de campo localmente</p>
+                <div class="version-info note">
+                    Versión: <span id="app-version"></span>
+                    <span class="last-saved">Última actualización: <span id="last-saved"></span></span>
+                </div>
+            </div>
         </header>
         
-        <main>
-            <section class="form-section">
-                <h2>Registrar Nueva Observación</h2>
-                <form id="observationForm">
-                    <div class="form-group">
-                        <label for="date-time">Fecha y Hora:</label>
-                        <input type="datetime-local" id="date-time" name="datetime" required readonly>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label for="location">Ubicación:</label>
-                        <div class="location-input-container">
-                            <input type="text" id="location" name="location" required placeholder="Ingrese ubicación o use GPS">
-                            <button type="button" id="get-location-btn" title="Obtener ubicación actual">📍 GPS</button>
-                        </div>
-                        <div id="location-display" class="location-display" style="display: none; margin-top: 5px; font-size: 0.9em; color: #666;">
-                            <span id="coordinates"></span>
-                        </div>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label>Frente de Trabajo:</label>
-                        <div class="dropdown-card" id="work-front-dropdown">
-                            <div class="dropdown-header" id="work-front-header">
-                                <span id="selected-work-front">Seleccione un frente</span>
-                                <span class="dropdown-arrow">▼</span>
+        <!-- Navegación -->
+        <nav class="main-nav">
+            <button class="nav-btn active" data-tab="registro">
+                <i class="fas fa-plus-circle"></i> Registrar
+            </button>
+            <button class="nav-btn" data-tab="observaciones">
+                <i class="fas fa-list"></i> Observaciones
+            </button>
+            <button class="nav-btn" data-tab="mapa">
+                <i class="fas fa-map-marked-alt"></i> Mapa
+            </button>
+            <button class="nav-btn" data-tab="configuracion">
+                <i class="fas fa-cog"></i> Configuración
+            </button>
+        </nav>
+        
+        <!-- Contenido principal -->
+        <main id="main-content">
+            <!-- Sección de registro -->
+            <section id="registro" class="tab-content active">
+                <div class="form-section card">
+                    <h2><i class="fas fa-clipboard-list"></i> Registrar Nueva Observación</h2>
+                    <form id="observationForm">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="date-time"><i class="far fa-calendar-alt"></i> Fecha y Hora:</label>
+                                <input type="datetime-local" id="date-time" name="datetime" required readonly class="form-control">
                             </div>
-                            <div class="dropdown-options" id="work-front-options" style="display: none;">
-                                <div class="dropdown-option" data-value="corona">Corona</div>
-                                <div class="dropdown-option" data-value="estribo_izquierdo">Estríbo Izquierdo</div>
-                                <div class="dropdown-option" data-value="estribo_derecho">Estríbo Derecho</div>
-                                <div class="dropdown-option" data-value="banda_5">Banda 5</div>
-                                <div class="dropdown-option" data-value="banda_6">Banda 6</div>
-                                <div class="dropdown-option" data-value="dren_inclinado">Dren Inclinado</div>
-                                <div class="dropdown-option" data-value="talud">Talud</div>
-                                <div class="dropdown-option" data-value="drenes_plataforma">Drenes y Plataforma</div>
+                            
+                            <div class="form-group">
+                                <label for="location"><i class="fas fa-map-marker-alt"></i> Ubicación:</label>
+                                <div class="location-input-container">
+                                    <input type="text" id="location" name="location" required placeholder="Ingrese ubicación o use GPS" class="form-control">
+                                    <button type="button" id="get-location-btn" class="btn btn-ghost" title="Obtener ubicación actual">
+                                        <i class="fas fa-location-crosshairs"></i> GPS
+                                    </button>
+                                    <button type="button" id="place-pin-btn" class="btn btn-ghost" title="Colocar pin en el mapa">
+                                        <i class="fas fa-map-marker-alt"></i> Pin
+                                    </button>
+                                </div>
+                                <div id="location-display" class="location-display">
+                                    <span id="coordinates"></span>
+                                </div>
                             </div>
-                            <input type="hidden" id="work-front" name="workfront" required>
                         </div>
-                    </div>
+                        
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label><i class="fas fa-project-diagram"></i> Frente de Trabajo:</label>
+                                <div class="dropdown-card sys-select" id="work-front-dropdown">
+                                    <div class="dropdown-header" id="work-front-header">
+                                        <span id="selected-work-front">Seleccione un frente</span>
+                                        <span class="dropdown-arrow">▼</span>
+                                    </div>
+                                    <div class="dropdown-options" id="work-front-options">
+                                        <div class="dropdown-option" data-value="corona">Corona</div>
+                                        <div class="dropdown-option" data-value="estribo_izquierdo">Estríbo Izquierdo</div>
+                                        <div class="dropdown-option" data-value="estribo_derecho">Estríbo Derecho</div>
+                                        <div class="dropdown-option" data-value="banda_5">Banda 5</div>
+                                        <div class="dropdown-option" data-value="banda_6">Banda 6</div>
+                                        <div class="dropdown-option" data-value="dren_inclinado">Dren Inclinado</div>
+                                        <div class="dropdown-option" data-value="talud">Talud</div>
+                                        <div class="dropdown-option" data-value="drenes_plataforma">Drenes y Plataforma</div>
+                                    </div>
+                                    <input type="hidden" id="work-front" name="workfront" required>
+                                </div>
+                            </div>
 
-                    <div class="form-group">
-                        <label>Tipo de Observación:</label>
-                        <div class="dropdown-card" id="tag-dropdown">
-                            <div class="dropdown-header" id="tag-header">
-                                <span id="selected-tag">Seleccione un tipo</span>
-                                <span class="dropdown-arrow">▼</span>
+                            <div class="form-group">
+                                <label><i class="fas fa-tags"></i> Tipo de Observación:</label>
+                                <div class="dropdown-card sys-select" id="tag-dropdown">
+                                    <div class="dropdown-header" id="tag-header">
+                                        <span id="selected-tag">Seleccione un tipo</span>
+                                        <span class="dropdown-arrow">▼</span>
+                                    </div>
+                                    <div class="dropdown-options" id="tag-options">
+                                        <div class="dropdown-option tag-option" data-value="rutina">
+                                            <span class="tag-color" style="background-color: #3498db;"></span>
+                                            <i class="fas fa-check-circle"></i> Rutina
+                                        </div>
+                                        <div class="dropdown-option tag-option" data-value="novedad">
+                                            <span class="tag-color" style="background-color: #f1c40f;"></span>
+                                            <i class="fas fa-exclamation-circle"></i> Novedad
+                                        </div>
+                                        <div class="dropdown-option tag-option" data-value="importante">
+                                            <span class="tag-color" style="background-color: #e74c3c;"></span>
+                                            <i class="fas fa-exclamation-triangle"></i> Importante
+                                        </div>
+                                    </div>
+                                    <input type="hidden" id="tag" name="tag" required>
+                                </div>
                             </div>
-                            <div class="dropdown-options" id="tag-options" style="display: none;">
-                                <div class="dropdown-option tag-option" data-value="rutina"><span class="tag-color" style="background-color: #3498db;"></span>Rutina</div>
-                                <div class="dropdown-option tag-option" data-value="novedad"><span class="tag-color" style="background-color: #f1c40f;"></span>Novedad</div>
-                                <div class="dropdown-option tag-option" data-value="importante"><span class="tag-color" style="background-color: #e74c3c;"></span>Importante</div>
-                            </div>
-                            <input type="hidden" id="tag" name="tag" required>
                         </div>
-                    </div>
-                    
-                    <div class="form-group" id="additional-info-group" style="display: none;">
-                        <label for="additional-info">Información Adicional (Drenes y Plataforma):</label>
-                        <textarea id="additional-info" name="additionalinfo" rows="3" class="form-control" placeholder="Ingrese información adicional para drenes y plataforma"></textarea>
-                    </div>
-                    
+                        
+                        <div class="form-group" id="additional-info-group">
+                            <label for="additional-info"><i class="fas fa-info-circle"></i> Información Adicional (Drenes y Plataforma):</label>
+                            <textarea id="additional-info" name="additionalinfo" rows="3" class="form-control" placeholder="Ingrese información adicional para drenes y plataforma"></textarea>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="notes"><i class="fas fa-sticky-note"></i> Actividades Realizadas:</label>
+                            <textarea id="notes" name="notes" rows="4" class="form-control" placeholder="Descripción detallada de las actividades realizadas"></textarea>
+                        </div>
 
-                    
-                    <div class="form-group">
-                        <label for="notes">Actividades Realizadas:</label>
-                        <textarea id="notes" name="notes" rows="4" class="form-control" placeholder="Descripción detallada de las actividades realizadas"></textarea>
-                    </div>
-                    
-                    <button type="submit">Guardar Observación</button>
-                </form>
+                        <div class="form-group">
+                            <label for="photo"><i class="fas fa-camera"></i> Fotos (opcional):</label>
+                            <div class="photo-upload-container">
+                                <input type="file" id="photo" name="photo" accept="image/*" multiple class="form-control">
+                                <div id="photo-preview" class="photo-preview"></div>
+                            </div>
+                        </div>
+                        
+                        <div class="form-actions">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save"></i> Guardar Observación
+                            </button>
+                            <button type="button" id="clear-form-btn" class="btn btn-ghost">
+                                <i class="fas fa-eraser"></i> Limpiar Formulario
+                            </button>
+                        </div>
+                    </form>
+                </div>
             </section>
             
-            <section class="data-section">
-                <h2>Observaciones Guardadas</h2>
-                <div class="controls">
-                    <button id="exportBtn">Exportar Datos</button>
-                    <button id="clearBtn">Limpiar Todos los Datos</button>
+            <!-- Sección de observaciones -->
+            <section id="observaciones" class="tab-content">
+                <div class="data-section card">
+                    <h2><i class="fas fa-clipboard-list"></i> Observaciones Guardadas</h2>
+                    <div class="controls">
+                        <button id="exportBtn" class="btn btn-primary">
+                            <i class="fas fa-file-export"></i> Exportar Datos
+                        </button>
+                        <button id="clearBtn" class="btn btn-danger">
+                            <i class="fas fa-trash-alt"></i> Limpiar Todos los Datos
+                        </button>
+                    </div>
+                    <div id="observationsList" class="grid-2"></div>
                 </div>
-                <div id="observationsList"></div>
+            </section>
+            
+            <!-- Sección de mapa -->
+            <section id="mapa" class="tab-content">
+                <div class="map-section card">
+                    <h2><i class="fas fa-map-marked-alt"></i> Mapa de Observaciones</h2>
+                    <div class="map-container">
+                        <div id="map" class="map-view">
+                            <img id="map-image" src="RAC-FOT.jpg" alt="Mapa RAC-FOT" class="map-image">
+                            <div id="map-overlay" class="map-overlay"></div>
+                        </div>
+                        <div class="map-controls">
+                            <button id="zoom-in" class="btn btn-ghost"><i class="fas fa-search-plus"></i> Acercar</button>
+                            <button id="zoom-out" class="btn btn-ghost"><i class="fas fa-search-minus"></i> Alejar</button>
+                            <button id="reset-view" class="btn btn-ghost"><i class="fas fa-sync-alt"></i> Reiniciar</button>
+                        </div>
+                        <div class="map-info">
+                            <div class="legend">
+                                <div class="legend-item">
+                                    <div class="legend-color" style="background-color: #e74c3c;"></div>
+                                    <span>Importante</span>
+                                </div>
+                                <div class="legend-item">
+                                    <div class="legend-color" style="background-color: #f1c40f;"></div>
+                                    <span>Novedad</span>
+                                </div>
+                                <div class="legend-item">
+                                    <div class="legend-color" style="background-color: #3498db;"></div>
+                                    <span>Rutina</span>
+                                </div>
+                            </div>
+                            <div id="map-coordinates" class="map-coordinates">Coordenadas: --</div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+            
+            <!-- Sección de configuración -->
+            <section id="configuracion" class="tab-content">
+                <div class="config-section card">
+                    <h2><i class="fas fa-cog"></i> Configuración</h2>
+                    <div class="config-options">
+                        <div class="config-item">
+                            <label for="theme-selector"><i class="fas fa-palette"></i> Tema Visual</label>
+                            <select id="theme-selector" class="form-control">
+                                <option value="dark">Oscuro (Predeterminado)</option>
+                                <option value="light">Claro</option>
+                                <option value="blue">Azul Profundo</option>
+                            </select>
+                        </div>
+                        
+                        <div class="config-item">
+                            <label for="auto-save"><i class="fas fa-save"></i> Guardado Automático</label>
+                            <div class="toggle-switch">
+                                <input type="checkbox" id="auto-save" checked>
+                                <label for="auto-save">Activado</label>
+                            </div>
+                        </div>
+                        
+                        <div class="config-item">
+                            <label for="notifications"><i class="fas fa-bell"></i> Notificaciones</label>
+                            <div class="toggle-switch">
+                                <input type="checkbox" id="notifications" checked>
+                                <label for="notifications">Activadas</label>
+                            </div>
+                        </div>
+                        
+                        <div class="config-item">
+                            <button id="backup-btn" class="btn btn-primary">
+                                <i class="fas fa-cloud-upload-alt"></i> Crear Copia de Seguridad
+                            </button>
+                        </div>
+                        
+                        <div class="config-item">
+                            <button id="restore-btn" class="btn btn-ghost">
+                                <i class="fas fa-cloud-download-alt"></i> Restaurar Copia de Seguridad
+                            </button>
+                        </div>
+                    </div>
+                </div>
             </section>
         </main>
+        
+        <!-- Modal para mensajes -->
+        <div id="message-modal" class="modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3 id="modal-title">Mensaje</h3>
+                    <span class="close">&times;</span>
+                </div>
+                <div class="modal-body">
+                    <p id="modal-message">Contenido del mensaje</p>
+                </div>
+                <div class="modal-footer">
+                    <button id="modal-ok" class="btn btn-primary">Aceptar</button>
+                </div>
+            </div>
+        </div>
     </div>
     
+    <script src="jszip.min.js"></script>
     <script src="script.js" id="main-script"></script>
+
+    <!-- Modal para el mapa -->
+    <div id="map-modal" class="modal">
+        <div class="modal-content" style="max-width: 90vw; height: 90vh;">
+            <div class="modal-header">
+                <h3>Seleccionar Ubicación en el Mapa</h3>
+                <span class="close" id="close-map-modal">&times;</span>
+            </div>
+            <div class="modal-body" style="height: calc(100% - 120px); padding: 0;">
+                <div id="modal-map-container" style="width: 100%; height: 100%; position: relative; overflow: auto;">
+                    <img src="RAC-FOT.jpg" alt="Mapa para seleccionar ubicación" id="modal-map-image" style="width: 100%; height: auto; cursor: crosshair;">
+                    <div id="modal-map-pin" style="position: absolute; display: none; transform: translate(-50%, -100%);">
+                        <i class="fas fa-map-marker-alt" style="color: red; font-size: 2rem;"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button id="confirm-location-btn" class="btn btn-primary">Confirmar Ubicación</button>
+            </div>
+        </div>
+    </div>
 </body>
 </html>
