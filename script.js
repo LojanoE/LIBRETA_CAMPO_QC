@@ -5,58 +5,117 @@ const APP_VERSION = '1.4.1'; // Increment this version number for updates
 // Function to set the version query parameter on assets
 function setVersion() {
     const version = APP_VERSION;
-    document.getElementById('main-styles').href = `styles.css?v=${version}`;
-    document.getElementById('main-script').src = `script.js?v=${version}`;
-    document.getElementById('app-version').textContent = version;
+    try {
+        document.getElementById('main-styles').href = `styles.css?v=${version}`;
+        document.getElementById('main-script').src = `script.js?v=${version}`;
+        document.getElementById('app-version').textContent = version;
+    } catch (error) {
+        console.error('Error en setVersion:', error);
+    }
     updateLastSavedDisplay();
 }
 
 // Function to update last saved display
 function updateLastSavedDisplay() {
-    const lastSaved = localStorage.getItem('lastSaved');
-    if (lastSaved) {
-        document.getElementById('last-saved').textContent = new Date(lastSaved).toLocaleString('es-ES');
-    } else {
-        document.getElementById('last-saved').textContent = 'Nunca';
+    try {
+        const lastSaved = localStorage.getItem('lastSaved');
+        if (lastSaved) {
+            document.getElementById('last-saved').textContent = new Date(lastSaved).toLocaleString('es-ES');
+        } else {
+            document.getElementById('last-saved').textContent = 'Nunca';
+        }
+    } catch (error) {
+        console.error('Error en updateLastSavedDisplay:', error);
     }
 }
 
 document.addEventListener('DOMContentLoaded', function() {
-    // Set the version of the app
-    setVersion();
-    // Check for updates on page load
-    checkForUpdates();
+    console.log('DOMContentLoaded ejecutado');
     
-    // DOM elements
-    const form = document.getElementById('observationForm');
-    const observationsList = document.getElementById('observationsList');
-    const exportBtn = document.getElementById('exportBtn');
-    const clearBtn = document.getElementById('clearBtn');
-    const clearFormBtn = document.getElementById('clear-form-btn');
-    const workFrontSelect = document.getElementById('work-front'); // hidden input
-    const workFrontHeader = document.getElementById('work-front-header');
-    const workFrontOptions = document.getElementById('work-front-options');
-    const selectedWorkFront = document.getElementById('selected-work-front');
-    const tagSelect = document.getElementById('tag'); // hidden input
-    const tagHeader = document.getElementById('tag-header');
-    const tagOptions = document.getElementById('tag-options');
-    const selectedTag = document.getElementById('selected-tag');
-    const additionalInfoGroup = document.getElementById('additional-info-group');
-    const getLocationBtn = document.getElementById('get-location-btn');
-    const locationInput = document.getElementById('location');
-    const locationDisplay = document.getElementById('location-display');
-    const coordinatesSpan = document.getElementById('coordinates');
-    const photoInput = document.getElementById('photo');
-    const photoPreview = document.getElementById('photo-preview');
-    const mainContent = document.getElementById('main-content');
-    const mapModal = document.getElementById('map-modal');
-    const placePinBtn = document.getElementById('place-pin-btn');
-    const closeMapModalBtn = document.getElementById('close-map-modal');
-    const modalMapContainer = document.getElementById('modal-map-container');
-    const modalMapImage = document.getElementById('modal-map-image');
-    const modalMapPin = document.getElementById('modal-map-pin');
-    const confirmLocationBtn = document.getElementById('confirm-location-btn');
-    let selectedPinCoords = null;
+    try {
+        // Set the version of the app
+        setVersion();
+        // Check for updates on page load
+        checkForUpdates();
+        
+        // DOM elements
+        const form = document.getElementById('observationForm');
+        const observationsList = document.getElementById('observationsList');
+        const exportBtn = document.getElementById('exportBtn');
+        const clearBtn = document.getElementById('clearBtn');
+        const clearFormBtn = document.getElementById('clear-form-btn');
+        const workFrontSelect = document.getElementById('work-front'); // hidden input
+        const workFrontHeader = document.getElementById('work-front-header');
+        const workFrontOptions = document.getElementById('work-front-options');
+        const selectedWorkFront = document.getElementById('selected-work-front');
+        const tagSelect = document.getElementById('tag'); // hidden input
+        const tagHeader = document.getElementById('tag-header');
+        const tagOptions = document.getElementById('tag-options');
+        const selectedTag = document.getElementById('selected-tag');
+        const additionalInfoGroup = document.getElementById('additional-info-group');
+        const getLocationBtn = document.getElementById('get-location-btn');
+        const locationInput = document.getElementById('location');
+        const locationDisplay = document.getElementById('location-display');
+        const coordinatesSpan = document.getElementById('coordinates');
+        const photoInput = document.getElementById('photo');
+        const photoPreview = document.getElementById('photo-preview');
+        const mainContent = document.getElementById('main-content');
+        const mapModal = document.getElementById('map-modal');
+        const placePinBtn = document.getElementById('place-pin-btn');
+        const closeMapModalBtn = document.getElementById('close-map-modal');
+        const modalMapContainer = document.getElementById('modal-map-container');
+        const modalMapImage = document.getElementById('modal-map-image');
+        const modalMapPin = document.getElementById('modal-map-pin');
+        const confirmLocationBtn = document.getElementById('confirm-location-btn');
+        let selectedPinCoords = null;
+        
+        // Garantizar que la funcionalidad PIN funcione por completo
+        setTimeout(function() {
+            console.log('Inicializando funcionalidad PIN después de DOM carga');
+            
+            // Asegurarse de que los elementos existen antes de usarlos
+            const pinBtn = document.getElementById('place-pin-btn');
+            const mapModalEl = document.getElementById('map-modal');
+            
+            if (pinBtn) {
+                // Remover cualquier evento previo y agregar el nuevo
+                pinBtn.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    console.log('Botón PIN clickeado desde el evento mejorado');
+                    
+                    if (mapModalEl) {
+                        console.log('Mostrando el modal del mapa');
+                        mapModalEl.style.display = 'block';
+                        
+                        // Asegurarse de que el modal es visible
+                        mapModalEl.style.zIndex = '2001'; // Mayor que otros modales
+                    } else {
+                        console.error('Elemento map-modal no encontrado');
+                    }
+                });
+                
+                console.log('Evento de PIN agregado al botón');
+            } else {
+                console.error('Botón place-pin-btn no encontrado en el DOM');
+            }
+            
+            // Funcionalidad adicional para cerrar el modal
+            const closeBtn = document.getElementById('close-map-modal');
+            if (closeBtn && mapModalEl) {
+                closeBtn.addEventListener('click', function() {
+                    mapModalEl.style.display = 'none';
+                });
+            }
+            
+            // Cerrar al hacer clic fuera del contenido del modal
+            window.addEventListener('click', function(event) {
+                if (mapModalEl && event.target === mapModalEl) {
+                    mapModalEl.style.display = 'none';
+                }
+            });
+            
+        }, 100); // Pequeño retraso para asegurar que todos los elementos estén disponibles
     
     // Tab navigation
     const navButtons = document.querySelectorAll('.nav-btn');
@@ -992,72 +1051,111 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     };
 
-    // Funcionalidad del modal del mapa para colocar un pin
-    if (placePinBtn && mapModal) {
-        placePinBtn.addEventListener('click', () => {
-            console.log('Botón PIN clickeado'); // Debug message
-            mapModal.style.display = 'block';
-            console.log('Modal debería estar visible ahora'); // Debug message
-        });
-        console.log('Evento de PIN añadido correctamente'); // Debug message
-    } else {
-        console.error('Error: No se encontraron los elementos necesarios para el botón PIN');
-        console.log('placePinBtn existe:', !!placePinBtn);
-        console.log('mapModal existe:', !!mapModal);
-    }
-
-    if (closeMapModalBtn && mapModal) {
-        closeMapModalBtn.addEventListener('click', () => {
-            mapModal.style.display = 'none';
-        });
-    }
-
-    if (modalMapContainer && modalMapImage && modalMapPin) {
-        modalMapContainer.addEventListener('click', (e) => {
-            if (e.target === modalMapContainer || e.target === modalMapImage) {
-                const rect = modalMapImage.getBoundingClientRect();
-                const x = e.clientX - rect.left;
-                const y = e.clientY - rect.top;
-
-                modalMapPin.style.left = `${x}px`;
-                modalMapPin.style.top = `${y}px`;
-                modalMapPin.style.display = 'block';
-
-                selectedPinCoords = { x, y };
-            }
-        });
-    }
-
-    if (confirmLocationBtn && mapModal) {
-        confirmLocationBtn.addEventListener('click', () => {
-            if (selectedPinCoords && typeof imageToPSAD56 === 'function') {
-                const psad56Coords = imageToPSAD56(selectedPinCoords.x, selectedPinCoords.y);
-                if (psad56Coords) {
-                    if (locationInput) {
-                        locationInput.value = `PSAD56: ${psad56Coords.x.toFixed(3)}, ${psad56Coords.y.toFixed(3)}`;
-                    }
-                    if (coordinatesSpan) {
-                        coordinatesSpan.innerHTML = `<strong>PSAD56 UTM 17S:</strong> ${psad56Coords.x.toFixed(0)}E, ${psad56Coords.y.toFixed(0)}N`;
-                    }
-                    if (locationDisplay) {
-                        locationDisplay.classList.add('show');
-                    }
-                    showMessage('Ubicación seleccionada desde el mapa.');
-                }
-                mapModal.style.display = 'none';
+        // Funcionalidad del modal del mapa para colocar un pin
+        try {
+            if (placePinBtn && mapModal) {
+                // Remover cualquier evento previo para evitar duplicados
+                placePinBtn.replaceWith(placePinBtn.cloneNode(true));
+                const newPlacePinBtn = document.getElementById('place-pin-btn');
+                
+                newPlacePinBtn.addEventListener('click', () => {
+                    console.log('Botón PIN clickeado'); // Debug message
+                    mapModal.style.display = 'block';
+                    mapModal.style.zIndex = '2001'; // Asegurar que esté en frente
+                    console.log('Modal debería estar visible ahora'); // Debug message
+                });
+                console.log('Evento de PIN añadido correctamente'); // Debug message
             } else {
-                if (!imageToPSAD56) {
-                    console.error('Error: La función imageToPSAD56 no está definida');
-                }
+                console.error('Error: No se encontraron los elementos necesarios para el botón PIN');
+                console.log('placePinBtn existe:', !!placePinBtn);
+                console.log('mapModal existe:', !!mapModal);
+            }
+
+            if (closeMapModalBtn && mapModal) {
+                closeMapModalBtn.addEventListener('click', () => {
+                    mapModal.style.display = 'none';
+                });
+            }
+
+            if (modalMapContainer && modalMapImage && modalMapPin) {
+                modalMapContainer.addEventListener('click', (e) => {
+                    if (e.target === modalMapContainer || e.target === modalMapImage) {
+                        const rect = modalMapImage.getBoundingClientRect();
+                        const x = e.clientX - rect.left;
+                        const y = e.clientY - rect.top;
+
+                        modalMapPin.style.left = `${x}px`;
+                        modalMapPin.style.top = `${y}px`;
+                        modalMapPin.style.display = 'block';
+
+                        selectedPinCoords = { x, y };
+                    }
+                });
+            }
+
+            if (confirmLocationBtn && mapModal) {
+                confirmLocationBtn.addEventListener('click', () => {
+                    if (selectedPinCoords && typeof imageToPSAD56 === 'function') {
+                        const psad56Coords = imageToPSAD56(selectedPinCoords.x, selectedPinCoords.y);
+                        if (psad56Coords) {
+                            if (locationInput) {
+                                locationInput.value = `PSAD56: ${psad56Coords.x.toFixed(3)}, ${psad56Coords.y.toFixed(3)}`;
+                            }
+                            if (coordinatesSpan) {
+                                coordinatesSpan.innerHTML = `<strong>PSAD56 UTM 17S:</strong> ${psad56Coords.x.toFixed(0)}E, ${psad56Coords.y.toFixed(0)}N`;
+                            }
+                            if (locationDisplay) {
+                                locationDisplay.classList.add('show');
+                            }
+                            showMessage('Ubicación seleccionada desde el mapa.');
+                        }
+                        mapModal.style.display = 'none';
+                    } else {
+                        if (typeof imageToPSAD56 !== 'function') {
+                            console.error('Error: La función imageToPSAD56 no está definida');
+                        }
+                    }
+                });
+            }
+        } catch (error) {
+            console.error('Error en la funcionalidad del PIN:', error);
+        }
+
+        // Función adicional de seguridad para garantizar que el botón PIN funcione
+        try {
+            const pinBtn = document.getElementById('place-pin-btn');
+            if (pinBtn) {
+                // Agregar un event listener más robusto
+                pinBtn.removeEventListener('click', null); // Remover cualquier listener anterior
+                pinBtn.addEventListener('click', function(event) {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    console.log('Botón PIN clickeado - Método definitivo');
+                    const modal = document.getElementById('map-modal');
+                    if (modal) {
+                        modal.style.display = 'block';
+                        modal.style.zIndex = '2001';
+                        console.log('Modal del mapa mostrado - Método definitivo');
+                    } else {
+                        console.error('mapModal no encontrado en método definitivo');
+                    }
+                });
+                console.log('Evento de PIN definitivo agregado');
+            } else {
+                console.error('place-pin-btn no encontrado en método definitivo');
+            }
+        } catch (error) {
+            console.error('Error al agregar el evento de PIN definitivo:', error);
+        }
+
+        window.addEventListener('click', (event) => {
+            if (mapModal && event.target == mapModal) {
+                mapModal.style.display = 'none';
             }
         });
+    } catch (error) {
+        console.error('Error general en el DOMContentLoaded:', error);
     }
-
-    window.addEventListener('click', (event) => {
-        if (mapModal && event.target == mapModal) {
-            mapModal.style.display = 'none';
-        }
-    });
 });
 
 // Añadir Toastify si no está disponible
