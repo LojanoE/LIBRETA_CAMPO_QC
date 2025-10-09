@@ -127,6 +127,19 @@ document.addEventListener('DOMContentLoaded', function() {
         const xOnImage = (xOnContainer + modalMapContainer.scrollLeft) / modalZoomLevel;
         const yOnImage = (yOnContainer + modalMapContainer.scrollTop) / modalZoomLevel;
 
+        // Boundary check
+        const imgWidth = modalMapImage.naturalWidth;
+        const imgHeight = modalMapImage.naturalHeight;
+
+        if (xOnImage < 0 || xOnImage > imgWidth || yOnImage < 0 || yOnImage > imgHeight) {
+            modalMapPin.style.display = 'none';
+            modalCoordinatesDisplay.textContent = 'Haga clic dentro del mapa.';
+            confirmLocationBtn.disabled = true;
+            truePinPosition = null;
+            selectedPinCoords = null;
+            return;
+        }
+
         truePinPosition = { x: xOnImage, y: yOnImage };
         updatePinPosition();
 
