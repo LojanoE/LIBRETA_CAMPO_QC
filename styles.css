@@ -1151,12 +1151,21 @@ html, body {
     position: absolute;
     top: 10px;
     right: 10px;
-    z-index: 15;
+    z-index: 10;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
 }
 
 .modal-map-controls .btn {
     padding: 0.5rem;
     line-height: 1;
+    background-color: rgba(0, 0, 0, 0.6) !important;
+    color: white !important;
+    border: 1px solid rgba(255, 255, 255, 0.5) !important;
+    width: 40px;
+    height: 40px;
+    font-size: 1.2rem;
 }
 .map-controls {
   position: absolute;

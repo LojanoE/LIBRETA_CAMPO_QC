@@ -67,46 +67,70 @@ document.addEventListener('DOMContentLoaded', function() {
     let modalZoomLevel = 1;
     const mapBounds = { minX: 780470.010, maxX: 782341.423, minY: 9602159.372, maxY: 9603738.377 };
     let selectedPinCoords = null;
+    let truePinPosition = null; // To store pin position on the un-zoomed image
 
-    // --- MAP MODAL PIN PLACEMENT ---
+    // --- MAP MODAL ---
+    let isModalDragging = false;
+    let hasDragged = false;
+    let modalDragStartX, modalDragStartY;
+    let modalScrollLeft, modalScrollTop;
+
+    function updatePinPosition() {
+        if (!truePinPosition) return;
+
+        const left = truePinPosition.x * modalZoomLevel;
+        const top = truePinPosition.y * modalZoomLevel;
+
+        modalMapPin.style.left = `${left}px`;
+        modalMapPin.style.top = `${top}px`;
+        modalMapPin.style.transform = `translate(-50%, -100%) scale(${1 / modalZoomLevel})`;
+        modalMapPin.style.display = 'block';
+    }
+
     placePinBtn.addEventListener('click', () => {
         mapModal.style.display = 'block';
         confirmLocationBtn.disabled = true;
         modalCoordinatesDisplay.textContent = 'Seleccione un punto en el mapa...';
         modalMapPin.style.display = 'none';
         selectedPinCoords = null;
+        truePinPosition = null;
         modalZoomLevel = 1;
         modalMapImage.style.transform = 'scale(1)';
-    });
-
-    modalZoomInBtn.addEventListener('click', () => {
-        modalZoomLevel = Math.min(modalZoomLevel + 0.2, 3);
-        modalMapImage.style.transform = `scale(${modalZoomLevel})`;
-    });
-
-    modalZoomOutBtn.addEventListener('click', () => {
-        modalZoomLevel = Math.max(modalZoomLevel - 0.2, 0.5);
-        modalMapImage.style.transform = `scale(${modalZoomLevel})`;
+        modalMapContainer.scrollTop = 0;
+        modalMapContainer.scrollLeft = 0;
     });
 
     closeMapModalBtn.addEventListener('click', () => {
         mapModal.style.display = 'none';
     });
 
+    modalZoomInBtn.addEventListener('click', () => {
+        modalZoomLevel = Math.min(modalZoomLevel + 0.3, 4);
+        modalMapImage.style.transform = `scale(${modalZoomLevel})`;
+        updatePinPosition();
+    });
+
+    modalZoomOutBtn.addEventListener('click', () => {
+        modalZoomLevel = Math.max(modalZoomLevel - 0.3, 1);
+        modalMapImage.style.transform = `scale(${modalZoomLevel})`;
+        updatePinPosition();
+    });
+
     function handlePinPlacement(e) {
-        e.preventDefault();
-        const rect = modalMapImage.getBoundingClientRect();
-        const clientX = e.touches ? e.touches[0].clientX : e.clientX;
-        const clientY = e.touches ? e.touches[0].clientY : e.clientY;
-        
-        const x = clientX - rect.left;
-        const y = clientY - rect.top;
+        const rect = modalMapContainer.getBoundingClientRect();
+        const clientX = e.changedTouches ? e.changedTouches[0].clientX : e.clientX;
+        const clientY = e.changedTouches ? e.changedTouches[0].clientY : e.clientY;
 
-        modalMapPin.style.left = `${x}px`;
-        modalMapPin.style.top = `${y}px`;
-        modalMapPin.style.display = 'block';
+        const xOnContainer = clientX - rect.left;
+        const yOnContainer = clientY - rect.top;
 
-        const psad56Coords = imageToPSAD56(x, y);
+        const xOnImage = (xOnContainer + modalMapContainer.scrollLeft) / modalZoomLevel;
+        const yOnImage = (yOnContainer + modalMapContainer.scrollTop) / modalZoomLevel;
+
+        truePinPosition = { x: xOnImage, y: yOnImage };
+        updatePinPosition();
+
+        const psad56Coords = imageToPSAD56(xOnImage, yOnImage);
 
         if (psad56Coords) {
             selectedPinCoords = psad56Coords;
@@ -119,13 +143,68 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
-    modalMapContainer.addEventListener('click', handlePinPlacement);
-    modalMapContainer.addEventListener('touchstart', handlePinPlacement);
+    modalMapContainer.addEventListener('mousedown', (e) => {
+        isModalDragging = true;
+        hasDragged = false;
+        modalMapContainer.style.cursor = 'grabbing';
+        modalDragStartX = e.pageX - modalMapContainer.offsetLeft;
+        modalDragStartY = e.pageY - modalMapContainer.offsetTop;
+        modalScrollLeft = modalMapContainer.scrollLeft;
+        modalScrollTop = modalMapContainer.scrollTop;
+    });
+    
+    modalMapContainer.addEventListener('touchstart', (e) => {
+        isModalDragging = true;
+        hasDragged = false;
+        modalDragStartX = e.touches[0].pageX - modalMapContainer.offsetLeft;
+        modalDragStartY = e.touches[0].pageY - modalMapContainer.offsetTop;
+        modalScrollLeft = modalMapContainer.scrollLeft;
+        modalScrollTop = modalMapContainer.scrollTop;
+    });
+
+    modalMapContainer.addEventListener('mousemove', (e) => {
+        if (!isModalDragging) return;
+        hasDragged = true;
+        e.preventDefault();
+        const x = e.pageX - modalMapContainer.offsetLeft;
+        const y = e.pageY - modalMapContainer.offsetTop;
+        const walkX = (x - modalDragStartX);
+        const walkY = (y - modalDragStartY);
+        modalMapContainer.scrollLeft = modalScrollLeft - walkX;
+        modalMapContainer.scrollTop = modalScrollTop - walkY;
+    });
+
+    modalMapContainer.addEventListener('touchmove', (e) => {
+        if (!isModalDragging) return;
+        hasDragged = true;
+        e.preventDefault();
+        const x = e.touches[0].pageX - modalMapContainer.offsetLeft;
+        const y = e.touches[0].pageY - modalMapContainer.offsetTop;
+        const walkX = (x - modalDragStartX);
+        const walkY = (y - modalDragStartY);
+        modalMapContainer.scrollLeft = modalScrollLeft - walkX;
+        modalMapContainer.scrollTop = modalScrollTop - walkY;
+    });
+
+    modalMapContainer.addEventListener('mouseup', (e) => {
+        isModalDragging = false;
+        modalMapContainer.style.cursor = 'grab';
+        if (!hasDragged) {
+            handlePinPlacement(e);
+        }
+    });
+
+    modalMapContainer.addEventListener('touchend', (e) => {
+        isModalDragging = false;
+        if (!hasDragged) {
+            handlePinPlacement(e);
+        }
+    });
 
     confirmLocationBtn.addEventListener('click', () => {
         if (selectedPinCoords) {
             locationInput.value = `PSAD56: ${selectedPinCoords.x.toFixed(3)}, ${selectedPinCoords.y.toFixed(3)}`;
-            coordinatesSpan.innerHTML = `<strong>PSAD56 UTM 17S:</strong> ${selectedPinCoords.x.toFixed(0)}E, ${selectedPinCoords.y.toFixed(0)}N`;
+            coordinatesSpan.innerHTML = `<strong>PSAD56 UTM 17S:</strong> ${Math.round(selectedPinCoords.x)}E, ${Math.round(selectedPinCoords.y)}N`;
             locationDisplay.classList.add('show');
             showMessage('Ubicación seleccionada desde el mapa.');
             mapModal.style.display = 'none';
