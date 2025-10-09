@@ -5,171 +5,124 @@ const APP_VERSION = '1.4.1'; // Increment this version number for updates
 // Function to set the version query parameter on assets
 function setVersion() {
     const version = APP_VERSION;
-    try {
-        document.getElementById('main-styles').href = `styles.css?v=${version}`;
-        document.getElementById('main-script').src = `script.js?v=${version}`;
-        document.getElementById('app-version').textContent = version;
-    } catch (error) {
-        console.error('Error en setVersion:', error);
-    }
+    document.getElementById('main-styles').href = `styles.css?v=${version}`;
+    document.getElementById('main-script').src = `script.js?v=${version}`;
+    document.getElementById('app-version').textContent = version;
     updateLastSavedDisplay();
 }
 
 // Function to update last saved display
 function updateLastSavedDisplay() {
-    try {
-        const lastSaved = localStorage.getItem('lastSaved');
-        if (lastSaved) {
-            document.getElementById('last-saved').textContent = new Date(lastSaved).toLocaleString('es-ES');
-        } else {
-            document.getElementById('last-saved').textContent = 'Nunca';
-        }
-    } catch (error) {
-        console.error('Error en updateLastSavedDisplay:', error);
+    const lastSaved = localStorage.getItem('lastSaved');
+    if (lastSaved) {
+        document.getElementById('last-saved').textContent = new Date(lastSaved).toLocaleString('es-ES');
+    } else {
+        document.getElementById('last-saved').textContent = 'Nunca';
     }
 }
 
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('DOMContentLoaded ejecutado');
+    // Set the version of the app
+    setVersion();
+    // Check for updates on page load
+    checkForUpdates();
     
-    try {
-        // Set the version of the app
-        setVersion();
-        // Check for updates on page load
-        checkForUpdates();
-        
-        // DOM elements
-        const form = document.getElementById('observationForm');
-        const observationsList = document.getElementById('observationsList');
-        const exportBtn = document.getElementById('exportBtn');
-        const clearBtn = document.getElementById('clearBtn');
-        const clearFormBtn = document.getElementById('clear-form-btn');
-        const workFrontSelect = document.getElementById('work-front'); // hidden input
-        const workFrontHeader = document.getElementById('work-front-header');
-        const workFrontOptions = document.getElementById('work-front-options');
-        const selectedWorkFront = document.getElementById('selected-work-front');
-        const tagSelect = document.getElementById('tag'); // hidden input
-        const tagHeader = document.getElementById('tag-header');
-        const tagOptions = document.getElementById('tag-options');
-        const selectedTag = document.getElementById('selected-tag');
-        const additionalInfoGroup = document.getElementById('additional-info-group');
-        const getLocationBtn = document.getElementById('get-location-btn');
-        const locationInput = document.getElementById('location');
-        const locationDisplay = document.getElementById('location-display');
-        const coordinatesSpan = document.getElementById('coordinates');
-        const photoInput = document.getElementById('photo');
-        const photoPreview = document.getElementById('photo-preview');
-        const mainContent = document.getElementById('main-content');
-        const mapModal = document.getElementById('map-modal');
-        const placePinBtn = document.getElementById('place-pin-btn');
-        const closeMapModalBtn = document.getElementById('close-map-modal');
-        const modalMapContainer = document.getElementById('modal-map-container');
-        const modalMapImage = document.getElementById('modal-map-image');
-        const modalMapPin = document.getElementById('modal-map-pin');
-        const confirmLocationBtn = document.getElementById('confirm-location-btn');
-        const modalCoordinatesDisplay = document.getElementById('modal-coordinates-display');
-        let selectedPinCoords = null;
+    // DOM elements
+    const form = document.getElementById('observationForm');
+    const observationsList = document.getElementById('observationsList');
+    const exportBtn = document.getElementById('exportBtn');
+    const clearBtn = document.getElementById('clearBtn');
+    const clearFormBtn = document.getElementById('clear-form-btn');
+    const workFrontSelect = document.getElementById('work-front'); // hidden input
+    const workFrontHeader = document.getElementById('work-front-header');
+    const workFrontOptions = document.getElementById('work-front-options');
+    const selectedWorkFront = document.getElementById('selected-work-front');
+    const tagSelect = document.getElementById('tag'); // hidden input
+    const tagHeader = document.getElementById('tag-header');
+    const tagOptions = document.getElementById('tag-options');
+    const selectedTag = document.getElementById('selected-tag');
+    const additionalInfoGroup = document.getElementById('additional-info-group');
+    const getLocationBtn = document.getElementById('get-location-btn');
+    const locationInput = document.getElementById('location');
+    const locationDisplay = document.getElementById('location-display');
+    const coordinatesSpan = document.getElementById('coordinates');
+    const photoInput = document.getElementById('photo');
+    const photoPreview = document.getElementById('photo-preview');
+    const mainContent = document.getElementById('main-content');
+    const mapModal = document.getElementById('map-modal');
+    const placePinBtn = document.getElementById('place-pin-btn');
+    const closeMapModalBtn = document.getElementById('close-map-modal');
+    const modalMapContainer = document.getElementById('modal-map-container');
+    const modalMapImage = document.getElementById('modal-map-image');
+    const modalMapPin = document.getElementById('modal-map-pin');
+    const confirmLocationBtn = document.getElementById('confirm-location-btn');
+    const modalCoordinatesDisplay = document.getElementById('modal-coordinates-display');
+    
+    // Map related variables
+    let mapInitialized = false;
+    let mapContainer, mapImage, mapOverlay;
+    let zoomLevel = 1;
+    const mapBounds = { minX: 780470.010, maxX: 782341.423, minY: 9602159.372, maxY: 9603738.377 };
+    let selectedPinCoords = null;
 
-        placePinBtn.addEventListener('click', () => {
-            mapModal.style.display = 'block';
-            confirmLocationBtn.disabled = true;
-            modalCoordinatesDisplay.textContent = 'Seleccione un punto en el mapa...';
-            modalMapPin.style.display = 'none';
+    // --- MAP MODAL PIN PLACEMENT ---
+    placePinBtn.addEventListener('click', () => {
+        mapModal.style.display = 'block';
+        confirmLocationBtn.disabled = true;
+        modalCoordinatesDisplay.textContent = 'Seleccione un punto en el mapa...';
+        modalMapPin.style.display = 'none';
+        selectedPinCoords = null;
+    });
+
+    closeMapModalBtn.addEventListener('click', () => {
+        mapModal.style.display = 'none';
+    });
+
+    function handlePinPlacement(e) {
+        e.preventDefault();
+        const rect = modalMapImage.getBoundingClientRect();
+        const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+        const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+        
+        const x = clientX - rect.left;
+        const y = clientY - rect.top;
+
+        modalMapPin.style.left = `${x}px`;
+        modalMapPin.style.top = `${y}px`;
+        modalMapPin.style.display = 'block';
+
+        const psad56Coords = imageToPSAD56(x, y);
+
+        if (psad56Coords) {
+            selectedPinCoords = psad56Coords;
+            modalCoordinatesDisplay.textContent = `PSAD56: ${psad56Coords.x.toFixed(2)}E, ${psad56Coords.y.toFixed(2)}N`;
+            confirmLocationBtn.disabled = false;
+        } else {
             selectedPinCoords = null;
-        });
+            modalCoordinatesDisplay.textContent = 'Punto fuera de los límites del mapa.';
+            confirmLocationBtn.disabled = true;
+        }
+    }
 
-        closeMapModalBtn.addEventListener('click', () => {
+    modalMapContainer.addEventListener('click', handlePinPlacement);
+    modalMapContainer.addEventListener('touchstart', handlePinPlacement);
+
+    confirmLocationBtn.addEventListener('click', () => {
+        if (selectedPinCoords) {
+            locationInput.value = `PSAD56: ${selectedPinCoords.x.toFixed(3)}, ${selectedPinCoords.y.toFixed(3)}`;
+            coordinatesSpan.innerHTML = `<strong>PSAD56 UTM 17S:</strong> ${selectedPinCoords.x.toFixed(0)}E, ${selectedPinCoords.y.toFixed(0)}N`;
+            locationDisplay.classList.add('show');
+            showMessage('Ubicación seleccionada desde el mapa.');
             mapModal.style.display = 'none';
-        });
+        }
+    });
 
-        modalMapContainer.addEventListener('click', (e) => {
-            if (e.target !== modalMapImage) return;
+    window.addEventListener('click', (event) => {
+        if (event.target == mapModal) {
+            mapModal.style.display = 'none';
+        }
+    });
 
-            const rect = modalMapImage.getBoundingClientRect();
-            const x = e.clientX - rect.left;
-            const y = e.clientY - rect.top;
-
-            modalMapPin.style.left = `${x}px`;
-            modalMapPin.style.top = `${y}px`;
-            modalMapPin.style.display = 'block';
-
-            const psad56Coords = imageToPSAD56(x, y);
-
-            if (psad56Coords) {
-                selectedPinCoords = psad56Coords;
-                modalCoordinatesDisplay.textContent = `PSAD56: ${psad56Coords.x.toFixed(2)}E, ${psad56Coords.y.toFixed(2)}N`;
-                confirmLocationBtn.disabled = false;
-            } else {
-                selectedPinCoords = null;
-                modalCoordinatesDisplay.textContent = 'Punto fuera de los límites del mapa.';
-                confirmLocationBtn.disabled = true;
-            }
-        });
-
-        confirmLocationBtn.addEventListener('click', () => {
-            if (selectedPinCoords) {
-                locationInput.value = `PSAD56: ${selectedPinCoords.x.toFixed(3)}, ${selectedPinCoords.y.toFixed(3)}`;
-                coordinatesSpan.innerHTML = `<strong>PSAD56 UTM 17S:</strong> ${selectedPinCoords.x.toFixed(0)}E, ${selectedPinCoords.y.toFixed(0)}N`;
-                locationDisplay.classList.add('show');
-                showMessage('Ubicación seleccionada desde el mapa.');
-                mapModal.style.display = 'none';
-            }
-        });
-
-        window.addEventListener('click', (event) => {
-            if (event.target == mapModal) {
-                mapModal.style.display = 'none';
-            }
-        });
-        
-        // Garantizar que la funcionalidad PIN funcione por completo
-        setTimeout(function() {
-            console.log('Inicializando funcionalidad PIN después de DOM carga');
-            
-            // Asegurarse de que los elementos existen antes de usarlos
-            const pinBtn = document.getElementById('place-pin-btn');
-            const mapModalEl = document.getElementById('map-modal');
-            
-            if (pinBtn) {
-                // Remover cualquier evento previo y agregar el nuevo
-                pinBtn.addEventListener('click', function(e) {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    console.log('Botón PIN clickeado desde el evento mejorado');
-                    
-                    if (mapModalEl) {
-                        console.log('Mostrando el modal del mapa');
-                        mapModalEl.style.display = 'block';
-                        
-                        // Asegurarse de que el modal es visible
-                        mapModalEl.style.zIndex = '2001'; // Mayor que otros modales
-                    } else {
-                        console.error('Elemento map-modal no encontrado');
-                    }
-                });
-                
-                console.log('Evento de PIN agregado al botón');
-            } else {
-                console.error('Botón place-pin-btn no encontrado en el DOM');
-            }
-            
-            // Funcionalidad adicional para cerrar el modal
-            const closeBtn = document.getElementById('close-map-modal');
-            if (closeBtn && mapModalEl) {
-                closeBtn.addEventListener('click', function() {
-                    mapModalEl.style.display = 'none';
-                });
-            }
-            
-            // Cerrar al hacer clic fuera del contenido del modal
-            window.addEventListener('click', function(event) {
-                if (mapModalEl && event.target === mapModalEl) {
-                    mapModalEl.style.display = 'none';
-                }
-            });
-            
-        }, 100); // Pequeño retraso para asegurar que todos los elementos estén disponibles
-    
     // Tab navigation
     const navButtons = document.querySelectorAll('.nav-btn');
     const tabContents = document.querySelectorAll('.tab-content');
@@ -178,11 +131,9 @@ document.addEventListener('DOMContentLoaded', function() {
         button.addEventListener('click', function() {
             const tabId = this.getAttribute('data-tab');
             
-            // Update active nav button
             navButtons.forEach(btn => btn.classList.remove('active'));
             this.classList.add('active');
             
-            // Show corresponding tab content
             tabContents.forEach(content => {
                 content.classList.remove('active');
                 if (content.id === tabId) {
@@ -190,14 +141,10 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             });
             
-            // Load appropriate content
-            switch(tabId) {
-                case 'observaciones':
-                    loadObservations();
-                    break;
-                case 'mapa':
-                    loadMap();
-                    break;
+            if (tabId === 'observaciones') {
+                loadObservations();
+            } else if (tabId === 'mapa') {
+                loadMap();
             }
         });
     });
@@ -218,7 +165,6 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
     
-    // Function to set the current date and time
     function setDateTime() {
         const now = new Date();
         const year = now.getFullYear();
@@ -230,28 +176,23 @@ document.addEventListener('DOMContentLoaded', function() {
         document.getElementById('date-time').value = formattedDateTime;
     }
 
-    // Auto-populate current date and time on page load
     setDateTime();
     
-    // Dropdown functionality for work front
     workFrontHeader.addEventListener('click', function(e) {
         e.stopPropagation();
         toggleDropdown('work-front-dropdown');
     });
 
-    // Dropdown functionality for tags
     tagHeader.addEventListener('click', function(e) {
         e.stopPropagation();
         toggleDropdown('tag-dropdown');
     });
 
-    // Function to toggle dropdown visibility
     function toggleDropdown(dropdownId) {
         const dropdown = document.getElementById(dropdownId);
         const options = dropdown.querySelector('.dropdown-options');
         const allDropdowns = document.querySelectorAll('.dropdown-card');
         
-        // Close all other dropdowns
         allDropdowns.forEach(d => {
             if (d !== dropdown) {
                 d.classList.remove('active');
@@ -259,16 +200,10 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
         
-        // Toggle current dropdown
         dropdown.classList.toggle('active');
-        if (options.style.display === 'block') {
-            options.style.display = 'none';
-        } else {
-            options.style.display = 'block';
-        }
+        options.style.display = options.style.display === 'block' ? 'none' : 'block';
     }
     
-    // Close dropdown when clicking outside
     document.addEventListener('click', function(event) {
         if (!event.target.closest('.dropdown-card')) {
             closeAllDropdowns();
@@ -283,15 +218,12 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
     
-    // Handle option selection for all dropdowns
     document.querySelectorAll('.dropdown-option').forEach(option => {
         option.addEventListener('click', function(e) {
-            e.stopPropagation(); // Prevent event bubbling
+            e.stopPropagation();
             const value = this.getAttribute('data-value');
-            // Extract text content without the tag-color span
             let text = this.textContent.trim();
             if (this.querySelector('.tag-color')) {
-                // If there's a tag-color span, get the text after it
                 const tagColor = this.querySelector('.tag-color').outerHTML;
                 text = this.innerHTML.replace(tagColor, '').replace(/<i[^>]*>.*?<\/i>/g, '').trim();
             }
@@ -303,52 +235,35 @@ document.addEventListener('DOMContentLoaded', function() {
             hiddenInput.value = value;
             selectedDisplay.innerHTML = text;
 
-            closeAllDropdowns(); // Close all dropdowns
+            closeAllDropdowns();
 
-            // Trigger change event to handle additional info for work front
             if (hiddenInput.id === 'work-front') {
                 hiddenInput.dispatchEvent(new Event('change'));
             }
         });
     });
     
-    // Show/hide additional info field based on work front selection
     workFrontSelect.addEventListener('change', function() {
-        if (this.value === 'drenes_plataforma') {
-            additionalInfoGroup.style.display = 'block';
-        } else {
-            additionalInfoGroup.style.display = 'none';
-        }
+        additionalInfoGroup.style.display = this.value === 'drenes_plataforma' ? 'block' : 'none';
     });
     
-    // Also check on page load in case there's a saved value
     if (workFrontSelect.value === 'drenes_plataforma') {
         additionalInfoGroup.style.display = 'block';
-    } else {
-        additionalInfoGroup.style.display = 'none';
     }
     
-    // Photo preview functionality
     photoInput.addEventListener('change', function() {
         photoPreview.innerHTML = '';
-        const files = this.files;
-        
-        for (let i = 0; i < files.length; i++) {
-            const file = files[i];
+        Array.from(this.files).forEach(file => {
             const reader = new FileReader();
-            
             reader.onload = function(e) {
                 const img = document.createElement('img');
                 img.src = e.target.result;
-                img.alt = `Foto ${i + 1}`;
                 photoPreview.appendChild(img);
             }
-            
             reader.readAsDataURL(file);
-        }
+        });
     });
     
-    // Check for app updates
     function checkForUpdates() {
         const remoteVersion = '1.4.1'; 
         if (compareVersions(APP_VERSION, remoteVersion) < 0) {
@@ -359,13 +274,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
-    // Handle online status
-    window.addEventListener('online', handleOnlineStatus);
-
-    function handleOnlineStatus() {
-        showMessage('Conectado a internet. Comprobando actualizaciones...');
-        checkForUpdates();
-    }
+    window.addEventListener('online', () => showMessage('Conectado a internet. Comprobando actualizaciones...'));
     
     function compareVersions(v1, v2) {
         const parts1 = v1.split('.').map(Number);
@@ -379,12 +288,11 @@ document.addEventListener('DOMContentLoaded', function() {
         return 0;
     }
     
-    function forceAppUpdate() {
+    window.forceAppUpdate = function() {
         localStorage.setItem('appVersion', APP_VERSION);
         showMessage(`Versión ${APP_VERSION} instalada correctamente`);
     }
     
-    // Coordinate transformation functions
     function convertToPSAD56(lat, lng) {
         const latOffset = 0.0027;
         const lngOffset = -0.0015;
@@ -403,24 +311,25 @@ document.addEventListener('DOMContentLoaded', function() {
     function convertToUTM(lat, lng, zoneNumber) {
         const K0 = 0.9996;
         const E = 0.00669438;
-        const E2 = Math.pow(E, 2);
-        const E3 = Math.pow(E, 3);
+        const E2 = E * E;
         const E_P2 = E / (1 - E);
         const a = 6378137.0;
         const isSouthern = lat < 0;
-        if (zoneNumber > 0 && isSouthern) {
-            zoneNumber = -zoneNumber;
-        }
+        
         const latRad = lat * Math.PI / 180;
         const lngRad = lng * Math.PI / 180;
         const lngOriginRad = ((Math.abs(zoneNumber) - 1) * 6 - 180 + 3) * Math.PI / 180;
+        
         const N = a / Math.sqrt(1 - E * Math.pow(Math.sin(latRad), 2));
         const T = Math.pow(Math.tan(latRad), 2);
         const C = E_P2 * Math.pow(Math.cos(latRad), 2);
         const A = Math.cos(latRad) * (lngRad - lngOriginRad);
-        const M = a * ((1 - E / 4 - 3 * E2 / 64 - 5 * E3 / 256) * latRad - (3 * E / 8 + 3 * E2 / 32 + 45 * E3 / 1024) * Math.sin(2 * latRad) + (15 * E2 / 256 + 45 * E3 / 1024) * Math.sin(4 * latRad) - (35 * E3 / 3072) * Math.sin(6 * latRad));
+        
+        const M = a * ((1 - E / 4 - 3 * E2 / 64 - 5 * (E2*E) / 256) * latRad - (3 * E / 8 + 3 * E2 / 32 + 45 * (E2*E) / 1024) * Math.sin(2 * latRad) + (15 * E2 / 256 + 45 * (E2*E) / 1024) * Math.sin(4 * latRad) - (35 * (E2*E) / 3072) * Math.sin(6 * latRad));
+        
         const utmEasting = K0 * N * (A + (1 - T + C) * Math.pow(A, 3) / 6 + (5 - 18 * T + T * T + 72 * C - 58 * E_P2) * Math.pow(A, 5) / 120) + 500000;
         let utmNorthing = K0 * (M + N * Math.tan(latRad) * (Math.pow(A, 2) / 2 + (5 - T + 9 * C + 4 * C * C) * Math.pow(A, 4) / 24 + (61 - 58 * T + T * T + 600 * C - 330 * E_P2) * Math.pow(A, 6) / 720));
+        
         if (isSouthern) {
             utmNorthing += 10000000;
         }
@@ -454,24 +363,13 @@ document.addEventListener('DOMContentLoaded', function() {
         return null;
     }
     
-    const versionSpan = document.getElementById('app-version');
-    if (versionSpan) {
-        versionSpan.textContent = APP_VERSION;
-    }
-    
-    window.convertToPSAD56 = convertToPSAD56;
-    window.forceAppUpdate = forceAppUpdate;
-    
-    // Update GPS button to show loading state
     getLocationBtn.addEventListener('click', function() {
         if (navigator.geolocation) {
             getLocationBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Buscando...';
             getLocationBtn.disabled = true;
             navigator.geolocation.getCurrentPosition(
                 function(position) {
-                    const lat = position.coords.latitude;
-                    const lng = position.coords.longitude;
-                    const accuracy = position.coords.accuracy;
+                    const { latitude: lat, longitude: lng, accuracy } = position.coords;
                     const psad56Coords = convertToPSAD56(lat, lng);
                     locationInput.value = `WGS84: ${lat.toFixed(6)}, ${lng.toFixed(6)}`;
                     coordinatesSpan.innerHTML = `<strong>WGS84:</strong> ${lat.toFixed(6)}, ${lng.toFixed(6)} <br> <strong>PSAD56 UTM 17S:</strong> ${psad56Coords.utmEasting}E, ${psad56Coords.utmNorthing}N (±${accuracy.toFixed(2)}m)`;
@@ -481,14 +379,12 @@ document.addEventListener('DOMContentLoaded', function() {
                     showMessage('Ubicación GPS obtenida y convertida a PSAD56 UTM 17S');
                 },
                 function(error) {
-                    let errorMessage = '';
-                    switch(error.code) {
-                        case error.PERMISSION_DENIED: errorMessage = 'Permiso de ubicación denegado.'; break;
-                        case error.POSITION_UNAVAILABLE: errorMessage = 'Información de ubicación no disponible.'; break;
-                        case error.TIMEOUT: errorMessage = 'Tiempo de espera agotado para obtener ubicación.'; break;
-                        default: errorMessage = 'Error desconocido al obtener ubicación.'; break;
-                    }
-                    showMessage('Error: ' + errorMessage);
+                    const messages = {
+                        [error.PERMISSION_DENIED]: 'Permiso de ubicación denegado.',
+                        [error.POSITION_UNAVAILABLE]: 'Información de ubicación no disponible.',
+                        [error.TIMEOUT]: 'Tiempo de espera agotado para obtener ubicación.'
+                    };
+                    showMessage('Error: ' + (messages[error.code] || 'Error desconocido al obtener ubicación.'));
                     getLocationBtn.innerHTML = '<i class="fas fa-location-crosshairs"></i> GPS';
                     getLocationBtn.disabled = false;
                 },
@@ -499,7 +395,6 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
     
-    // Clear form button functionality
     clearFormBtn.addEventListener('click', function() {
         if (confirm('¿Está seguro de que desea limpiar el formulario?')) {
             form.reset();
@@ -507,11 +402,10 @@ document.addEventListener('DOMContentLoaded', function() {
             locationDisplay.classList.remove('show');
             coordinatesSpan.textContent = '';
             photoPreview.innerHTML = '';
-            additionalInfoGroup.style.display = 'none'; // Ocultar el campo adicional al limpiar
+            additionalInfoGroup.style.display = 'none';
         }
     });
     
-    // Load initial observations
     loadObservations();
     
     form.addEventListener('submit', async function(e) {
@@ -531,7 +425,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 });
             } catch (error) {
                 showMessage('Error al procesar las imágenes.');
-                console.error(error);
                 return;
             }
         }
@@ -559,7 +452,7 @@ document.addEventListener('DOMContentLoaded', function() {
         locationDisplay.classList.remove('show');
         coordinatesSpan.textContent = '';
         photoPreview.innerHTML = '';
-        additionalInfoGroup.style.display = 'none'; // Ocultar el campo adicional después de guardar
+        additionalInfoGroup.style.display = 'none';
         showMessage('¡Observación guardada exitosamente!');
         loadObservations();
     });
@@ -571,7 +464,6 @@ document.addEventListener('DOMContentLoaded', function() {
             localStorage.removeItem('observations');
             localStorage.removeItem('lastSaved');
             loadObservations();
-            updateStats();
             updateLastSavedDisplay();
             showMessage('Todas las observaciones han sido eliminadas');
         }
@@ -586,46 +478,43 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     function getObservations() {
-        const observations = localStorage.getItem('observations');
-        return observations ? JSON.parse(observations) : [];
+        return JSON.parse(localStorage.getItem('observations') || '[]');
     }
     
     function loadObservations() {
         const observations = getObservations();
+        observationsList.innerHTML = '';
         if (observations.length === 0) {
             observationsList.innerHTML = '<div class="no-observations">No hay observaciones registradas aún</div>';
             return;
         }
         observations.sort((a, b) => new Date(b.datetime) - new Date(a.datetime));
-        observationsList.innerHTML = '';
+        
         observations.forEach(observation => {
             const observationCard = document.createElement('div');
             observationCard.className = 'observation-card';
-            const workFrontDisplay = formatWorkFront(observation.workFront);
-            const tagDisplay = formatTag(observation.tag);
-            observationCard.style.borderLeftColor = tagDisplay.color;
+            const { name: tagName, color: tagColor } = formatTag(observation.tag);
+            observationCard.style.borderLeftColor = tagColor;
 
             let photosHTML = '';
             if (observation.photos && observation.photos.length > 0) {
-                photosHTML += '<div class="observation-detail full-width"><strong>Fotos:</strong><br><div class="photo-thumbnails">';
-                observation.photos.forEach((photo, index) => {
-                    photosHTML += `<img src="${photo}" alt="Foto de la observación ${index + 1}" class="observation-photo-thumbnail">`;
-                });
-                photosHTML += '</div></div>';
+                photosHTML = `<div class="observation-detail full-width"><strong>Fotos:</strong><br><div class="photo-thumbnails">
+                    ${observation.photos.map((photo, index) => `<img src="${photo}" alt="Foto ${index + 1}" class="observation-photo-thumbnail">`).join('')}
+                </div></div>`;
             }
 
             let downloadBtnsHTML = '';
             if (observation.photos && observation.photos.length > 0) {
-                observation.photos.forEach((photo, index) => {
-                    downloadBtnsHTML += `<button class="download-photo-btn" data-id="${observation.id}" data-photo-index="${index}">Descargar Foto ${index + 1}</button>`;
-                });
+                downloadBtnsHTML = observation.photos.map((photo, index) => 
+                    `<button class="download-photo-btn" data-id="${observation.id}" data-photo-index="${index}">Descargar Foto ${index + 1}</button>`
+                ).join('');
             }
             
             observationCard.innerHTML = `
                 <h3>${observation.location} <small>(${formatDateTime(observation.datetime)})</small></h3>
                 <div class="observation-details">
-                    <div class="observation-detail"><strong>Frente de Trabajo:</strong> ${workFrontDisplay}</div>
-                    <div class="observation-detail"><strong>Tipo:</strong> <span class="tag-display" style="background-color: ${tagDisplay.color}">${tagDisplay.name}</span></div>
+                    <div class="observation-detail"><strong>Frente de Trabajo:</strong> ${formatWorkFront(observation.workFront)}</div>
+                    <div class="observation-detail"><strong>Tipo:</strong> <span class="tag-display" style="background-color: ${tagColor}">${tagName}</span></div>
                     ${observation.coordinates?.wgs84 ? `<div class="observation-detail"><strong>Coordenadas WGS84:</strong> ${observation.coordinates.wgs84.lat.toFixed(6)}, ${observation.coordinates.wgs84.lng.toFixed(6)}</div>` : ''}
                     ${observation.coordinates?.psad56 ? `<div class="observation-detail"><strong>PSAD56 UTM 17S:</strong> ${observation.coordinates.psad56.easting}E, ${observation.coordinates.psad56.northing}N</div>` : ''}
                     ${observation.additionalInfo ? `<div class="observation-detail"><strong>Info Adicional:</strong> ${observation.additionalInfo}</div>` : ''}
@@ -640,8 +529,7 @@ document.addEventListener('DOMContentLoaded', function() {
         
         document.querySelectorAll('.delete-btn').forEach(button => {
             button.addEventListener('click', function() {
-                const id = parseInt(this.getAttribute('data-id'));
-                deleteObservation(id);
+                deleteObservation(parseInt(this.getAttribute('data-id')));
             });
         });
 
@@ -649,9 +537,8 @@ document.addEventListener('DOMContentLoaded', function() {
             button.addEventListener('click', function() {
                 const id = parseInt(this.getAttribute('data-id'));
                 const photoIndex = parseInt(this.getAttribute('data-photo-index'));
-                const observations = getObservations();
-                const observation = observations.find(obs => obs.id === id);
-                if (observation && observation.photos && observation.photos[photoIndex]) {
+                const observation = getObservations().find(obs => obs.id === id);
+                if (observation?.photos?.[photoIndex]) {
                     const link = document.createElement('a');
                     link.href = observation.photos[photoIndex];
                     link.download = observation.photoFileNames[photoIndex] || `foto_${id}_${photoIndex}.jpeg`;
@@ -662,8 +549,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     function deleteObservation(id) {
-        let observations = getObservations();
-        observations = observations.filter(obs => obs.id !== id);
+        let observations = getObservations().filter(obs => obs.id !== id);
         localStorage.setItem('observations', JSON.stringify(observations));
         localStorage.setItem('lastSaved', new Date().toISOString());
         loadObservations();
@@ -679,35 +565,29 @@ document.addEventListener('DOMContentLoaded', function() {
         }
 
         const zip = new JSZip();
-        const observationsForJson = observations.map(obs => {
-            const obsCopy = { ...obs };
-            delete obsCopy.photos;
-            return obsCopy;
-        });
+        const observationsForJson = observations.map(({ photos, ...obs }) => obs);
 
         zip.file(`libreta_campo_${new Date().toISOString().slice(0,10)}.json`, JSON.stringify(observationsForJson, null, 2));
 
         observations.forEach(obs => {
             if (obs.photos && obs.photoFileNames) {
                 obs.photos.forEach((photoData, index) => {
-                    const photoBase64 = photoData.split(',')[1];
-                    zip.file(obs.photoFileNames[index], photoBase64, { base64: true });
+                    zip.file(obs.photoFileNames[index], photoData.split(',')[1], { base64: true });
                 });
             }
         });
 
         try {
             const content = await zip.generateAsync({ type: 'blob' });
-            const linkElement = document.createElement('a');
             const url = URL.createObjectURL(content);
-            linkElement.setAttribute('href', url);
-            linkElement.setAttribute('download', `export_libreta_campo_${new Date().toISOString().slice(0,10)}.zip`);
+            const linkElement = document.createElement('a');
+            linkElement.href = url;
+            linkElement.download = `export_libreta_campo_${new Date().toISOString().slice(0,10)}.zip`;
             linkElement.click();
             URL.revokeObjectURL(url);
             showMessage('¡Datos exportados exitosamente en un archivo ZIP!');
         } catch (error) {
             showMessage('Error al generar el archivo ZIP.');
-            console.error(error);
         }
     }
 
@@ -718,21 +598,17 @@ document.addEventListener('DOMContentLoaded', function() {
                 const img = new Image();
                 img.onload = function() {
                     const canvas = document.createElement('canvas');
-                    let width = img.width;
-                    let height = img.height;
-
-                    if (width > maxWidth) {
-                        height *= maxWidth / width;
-                        width = maxWidth;
-                    }
-
-                    canvas.width = width;
-                    canvas.height = height;
+                    const { width: w, height: h } = img;
+                    const ratio = w / h;
+                    
+                    canvas.width = w > maxWidth ? maxWidth : w;
+                    canvas.height = w > maxWidth ? maxWidth / ratio : h;
+                    
                     const ctx = canvas.getContext('2d');
-                    ctx.drawImage(img, 0, 0, width, height);
-
+                    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
                     resolve(canvas.toDataURL('image/jpeg'));
                 };
+                img.onerror = reject;
                 img.src = event.target.result;
             }
             reader.onerror = reject;
@@ -741,124 +617,62 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     function showMessage(message) {
-        // Usar un toast notification o modal mejorado
-        Toastify({
-            text: message,
-            duration: 3000,
-            close: true,
-            gravity: "top", // `top` or `bottom`
-            position: "right", // `left`, `center` or `right`
-            backgroundColor: "linear-gradient(to right, #00b09b, #96c93d)",
-            stopOnFocus: true, // Prevents dismissing of toast on hover
-        }).showToast();
+        if (typeof Toastify === 'function') {
+            Toastify({
+                text: message,
+                duration: 3000,
+                close: true,
+                gravity: "top",
+                position: "right",
+                backgroundColor: "linear-gradient(to right, #00b09b, #96c93d)",
+                stopOnFocus: true,
+            }).showToast();
+        } else {
+            alert(message);
+        }
     }
     
     function formatDateTime(dateTimeString) {
-        const date = new Date(dateTimeString);
-        const options = { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' };
-        return date.toLocaleDateString('es-ES', options);
+        return new Date(dateTimeString).toLocaleDateString('es-ES', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
     }
     
     function formatNotesWithBullets(notes) {
         if (!notes) return '';
-        const lines = notes.split('\n');
-        const processedLines = lines.map(line => {
-            if (line.trim().startsWith('•')) {
-                return `<div class="bullet-item">${line.trim().substring(1).trim()}</div>`;
-            } else if (line.trim() !== '') {
-                return `<div class="regular-item">${line.trim()}</div>`;
+        return notes.split('\n').map(line => {
+            const trimmed = line.trim();
+            if (trimmed.startsWith('•')) {
+                return `<div class="bullet-item">${trimmed.substring(1).trim()}</div>`;
+            } else if (trimmed) {
+                return `<div class="regular-item">${trimmed}</div>`;
             }
             return '';
-        });
-        return processedLines.join('\n');
+        }).join('');
     }
     
     function formatWorkFront(workFrontValue) {
-        switch(workFrontValue) {
-            case 'corona': return 'Corona';
-            case 'estribo_izquierdo': return 'Estríbo Izquierdo';
-            case 'estribo_derecho': return 'Estríbo Derecho';
-            case 'banda_5': return 'Banda 5';
-            case 'banda_6': return 'Banda 6';
-            case 'dren_inclinado': return 'Dren Inclinado';
-            case 'talud': return 'Talud';
-            case 'drenes_plataforma': return 'Drenes y Plataforma';
-            default: return workFrontValue;
-        }
+        const fronts = {
+            'corona': 'Corona',
+            'estribo_izquierdo': 'Estríbo Izquierdo',
+            'estribo_derecho': 'Estríbo Derecho',
+            'banda_5': 'Banda 5',
+            'banda_6': 'Banda 6',
+            'dren_inclinado': 'Dren Inclinado',
+            'talud': 'Talud',
+            'drenes_plataforma': 'Drenes y Plataforma'
+        };
+        return fronts[workFrontValue] || workFrontValue;
     }
 
     function formatTag(tagValue) {
-        switch(tagValue) {
-            case 'importante': return { name: 'Importante', color: '#e74c3c' };
-            case 'novedad': return { name: 'Novedad', color: '#f1c40f' };
-            case 'rutina': return { name: 'Rutina', color: '#3498db' };
-            default: return { name: tagValue, color: '#bdc3c7' };
-        }
+        const tags = {
+            'importante': { name: 'Importante', color: '#e74c3c' },
+            'novedad': { name: 'Novedad', color: '#f1c40f' },
+            'rutina': { name: 'Rutina', color: '#3498db' }
+        };
+        return tags[tagValue] || { name: tagValue, color: '#bdc3c7' };
     }
     
-    
-    // Actualizar marcadores del mapa cuando se inicie
-    if (mapInitialized) {
-        updateMapMarkers();
-    }
-    
-    // Funcionalidad para la sección de configuración
-    const themeSelector = document.getElementById('theme-selector');
-    if (themeSelector) {
-        themeSelector.addEventListener('change', function() {
-            // Aquí se podría implementar la lógica para cambiar el tema
-            showMessage(`Tema cambiado a: ${this.value}`);
-        });
-    }
-    
-    const backupBtn = document.getElementById('backup-btn');
-    if (backupBtn) {
-        backupBtn.addEventListener('click', function() {
-            const observations = getObservations();
-            const backupData = {
-                observations: observations,
-                version: APP_VERSION,
-                backupDate: new Date().toISOString()
-            };
-            
-            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(backupData));
-            const downloadAnchorNode = document.createElement('a');
-            downloadAnchorNode.setAttribute("href", dataStr);
-            downloadAnchorNode.setAttribute("download", `backup_libreta_campo_${new Date().toISOString().slice(0,10)}.json`);
-            document.body.appendChild(downloadAnchorNode); // required for firefox
-            downloadAnchorNode.click();
-            downloadAnchorNode.remove();
-            
-            showMessage('Copia de seguridad creada exitosamente');
-        });
-    }
-    
-    const restoreBtn = document.getElementById('restore-btn');
-    if (restoreBtn) {
-        restoreBtn.addEventListener('click', function() {
-            // Aquí se podría implementar la lógica para restaurar desde una copia de seguridad
-            showMessage('Funcionalidad de restauración de copia de seguridad en desarrollo');
-        });
-    }
-    
-    // Funcionalidad del mapa
-    let mapInitialized = false;
-    let mapContainer = null;
-    let mapImage = null;
-    let mapOverlay = null;
-    let zoomLevel = 1;
-    let isDragging = false;
-    let dragStartX = 0;
-    let dragStartY = 0;
-    
-    // Límites del mapa en coordenadas PSAD56
-    const mapBounds = {
-        minX: 780470.010,
-        maxX: 782341.423,
-        minY: 9602159.372,
-        maxY: 9603738.377
-    };
-    
+    // --- MAP FUNCTIONALITY ---
     function loadMap() {
         if (!mapInitialized) {
             initializeMap();
@@ -872,349 +686,134 @@ document.addEventListener('DOMContentLoaded', function() {
         mapImage = document.getElementById('map-image');
         mapOverlay = document.getElementById('map-overlay');
         
-        // Esperar a que la imagen se cargue completamente para obtener dimensiones precisas
-        mapImage.onload = function() {
+        if (mapImage.complete) {
             updateMapZoom();
-        };
+        } else {
+            mapImage.onload = updateMapZoom;
+        }
         
-        // Configurar eventos de zoom
-        document.getElementById('zoom-in').addEventListener('click', function() {
-            zoomLevel = Math.min(zoomLevel + 0.2, 3); // Máximo 3x zoom
-            updateMapZoom();
-        });
-        
-        document.getElementById('zoom-out').addEventListener('click', function() {
-            zoomLevel = Math.max(zoomLevel - 0.2, 0.5); // Mínimo 0.5x zoom
-            updateMapZoom();
-        });
-        
-        document.getElementById('reset-view').addEventListener('click', function() {
+        document.getElementById('zoom-in').addEventListener('click', () => { zoomLevel = Math.min(zoomLevel + 0.2, 3); updateMapZoom(); });
+        document.getElementById('zoom-out').addEventListener('click', () => { zoomLevel = Math.max(zoomLevel - 0.2, 0.5); updateMapZoom(); });
+        document.getElementById('reset-view').addEventListener('click', () => {
             zoomLevel = 1;
             mapContainer.scrollLeft = 0;
             mapContainer.scrollTop = 0;
             updateMapZoom();
         });
         
-        // Configurar eventos de arrastre
-        let isMouseDown = false;
+        let isDragging = false;
+        let dragStartX, dragStartY;
         
         mapContainer.addEventListener('mousedown', function(e) {
-            if (e.target === mapContainer || e.target === mapImage || e.target === mapOverlay) {
-                isMouseDown = true;
+            if (e.target === mapImage || e.target === mapOverlay) {
                 isDragging = true;
-                dragStartX = e.clientX - mapContainer.scrollLeft;
-                dragStartY = e.clientY - mapContainer.scrollTop;
+                dragStartX = e.clientX - mapContainer.offsetLeft;
+                dragStartY = e.clientY - mapContainer.offsetTop;
                 mapContainer.style.cursor = 'grabbing';
             }
         });
         
         mapContainer.addEventListener('mousemove', function(e) {
-            if (isMouseDown && isDragging) {
-                mapContainer.scrollLeft = e.clientX - dragStartX;
-                mapContainer.scrollTop = e.clientY - dragStartY;
+            if (isDragging) {
+                const x = e.clientX - dragStartX;
+                const y = e.clientY - dragStartY;
+                mapContainer.style.left = x + "px";
+                mapContainer.style.top = y + "px";
                 e.preventDefault();
             }
             
-            // Mostrar coordenadas bajo el cursor
-            if (mapImage && mapOverlay && mapImage.complete) {
-                const rect = mapContainer.getBoundingClientRect();
-                const x = e.clientX - rect.left;
-                const y = e.clientY - rect.top;
-                
-                // Convertir coordenadas de imagen a coordenadas PSAD56
-                const psad56Coords = imageToPSAD56(x, y);
-                if (psad56Coords) {
-                    document.getElementById('map-coordinates').textContent = 
-                        `Coordenadas: ${psad56Coords.x.toFixed(3)}, ${psad56Coords.y.toFixed(3)}`;
-                }
+            const rect = mapContainer.getBoundingClientRect();
+            const x_coord = e.clientX - rect.left;
+            const y_coord = e.clientY - rect.top;
+            const psad56Coords = imageToPSAD56(x_coord, y_coord);
+            if (psad56Coords) {
+                document.getElementById('map-coordinates').textContent = `Coordenadas: ${psad56Coords.x.toFixed(3)}, ${psad56Coords.y.toFixed(3)}`;
             }
         });
         
-        mapContainer.addEventListener('mouseup', function() {
-            isMouseDown = false;
+        document.addEventListener('mouseup', () => {
             isDragging = false;
             mapContainer.style.cursor = 'grab';
         });
         
-        mapContainer.addEventListener('mouseleave', function() {
-            isMouseDown = false;
-            isDragging = false;
-            document.getElementById('map-coordinates').textContent = 'Coordenadas: --';
-            mapContainer.style.cursor = 'default';
-        });
-        
-        // Evitar selección de texto durante arrastre
-        mapContainer.addEventListener('selectstart', function(e) {
-            if (isDragging) {
-                e.preventDefault();
-            }
-        });
-        
-        // Inicializar el zoom solo si la imagen ya está cargada
-        if (mapImage.complete) {
-            updateMapZoom();
-        }
+        mapContainer.addEventListener('mouseleave', () => document.getElementById('map-coordinates').textContent = 'Coordenadas: --');
     }
     
     function updateMapZoom() {
-        if (!mapImage || !mapImage.complete) return;
-        
-        const newWidth = mapImage.naturalWidth * zoomLevel;
-        const newHeight = mapImage.naturalHeight * zoomLevel;
-        
-        mapImage.style.width = newWidth + 'px';
-        mapImage.style.height = newHeight + 'px';
+        if (!mapImage) return;
+        mapImage.style.width = (mapImage.naturalWidth * zoomLevel) + 'px';
+        mapImage.style.height = (mapImage.naturalHeight * zoomLevel) + 'px';
+        updateMapMarkers();
     }
     
     function updateMapMarkers() {
-        // Limpiar marcadores anteriores
-        const existingMarkers = mapOverlay.querySelectorAll('.map-marker');
-        existingMarkers.forEach(marker => marker.remove());
-        
-        const observations = getObservations();
-        
-        // Filtrar observaciones con coordenadas PSAD56 válidas
-        const validObservations = observations.filter(obs => 
-            obs.coordinates && obs.coordinates.psad56 && 
-            obs.coordinates.psad56.easting && obs.coordinates.psad56.northing
-        );
-        
-        // Añadir marcadores para cada observación
-        validObservations.forEach(obs => {
-            const psad56 = obs.coordinates.psad56;
-            const iconColor = getTagColor(obs.tag);
-            
-            // Convertir coordenadas PSAD56 a coordenadas de imagen
-            const imgCoords = psad56ToImage(psad56.easting, psad56.northing);
-            
-            if (imgCoords) {
-                const marker = document.createElement('div');
-                marker.className = 'map-marker';
-                marker.style.left = imgCoords.x + 'px';
-                marker.style.top = imgCoords.y + 'px';
-                marker.style.color = iconColor;
-                
-                // Usar icono diferente según el tipo de observación
-                let iconClass = 'fas fa-circle';
-                switch(obs.tag) {
-                    case 'importante':
-                        iconClass = 'fas fa-exclamation-triangle';
-                        break;
-                    case 'novedad':
-                        iconClass = 'fas fa-exclamation-circle';
-                        break;
-                    case 'rutina':
-                        iconClass = 'fas fa-check-circle';
-                        break;
+        if (!mapOverlay) return;
+        mapOverlay.innerHTML = '';
+        getObservations().forEach(obs => {
+            if (obs.coordinates?.psad56?.easting && obs.coordinates?.psad56?.northing) {
+                const { easting, northing } = obs.coordinates.psad56;
+                const imgCoords = psad56ToImage(easting, northing);
+                if (imgCoords) {
+                    const marker = document.createElement('div');
+                    marker.className = 'map-marker';
+                    marker.style.left = imgCoords.x + 'px';
+                    marker.style.top = imgCoords.y + 'px';
+                    marker.style.color = formatTag(obs.tag).color;
+                    
+                    const icons = { 'importante': 'fa-exclamation-triangle', 'novedad': 'fa-exclamation-circle', 'rutina': 'fa-check-circle' };
+                    marker.innerHTML = `<i class="fas ${icons[obs.tag] || 'fa-circle'}"></i>`;
+                    
+                    marker.addEventListener('click', () => showObservationDetails(obs));
+                    marker.title = `${obs.location} (${formatDateTime(obs.datetime)})`;
+                    mapOverlay.appendChild(marker);
                 }
-                
-                marker.innerHTML = `<i class="${iconClass}"></i>`;
-                
-                // Añadir evento de clic para mostrar detalles
-                marker.addEventListener('click', function() {
-                    showObservationDetails(obs);
-                });
-                
-                // Añadir tooltip con información básica
-                marker.title = `${obs.location} (${formatDateTime(obs.datetime)})`;
-                
-                mapOverlay.appendChild(marker);
             }
         });
     }
     
     function psad56ToImage(easting, northing) {
-        // Verificar si las coordenadas están dentro de los límites del mapa
-        if (easting < mapBounds.minX || easting > mapBounds.maxX || 
-            northing < mapBounds.minY || northing > mapBounds.maxY) {
-            console.log(`Coordenada fuera de los límites: ${easting}, ${northing}`);
-            return null; // Fuera de los límites
+        if (easting < mapBounds.minX || easting > mapBounds.maxX || northing < mapBounds.minY || northing > mapBounds.maxY) {
+            return null;
         }
-        
-        // Obtener dimensiones reales de la imagen visible
-        const imgWidth = mapImage ? mapImage.clientWidth : 800;
-        const imgHeight = mapImage ? mapImage.clientHeight : 600;
-        
-        // Ajustar el cálculo considerando la proporción de la imagen
+        const imgWidth = mapImage ? mapImage.clientWidth : 0;
+        const imgHeight = mapImage ? mapImage.clientHeight : 0;
         const x = ((easting - mapBounds.minX) / (mapBounds.maxX - mapBounds.minX)) * imgWidth;
-        // Invertir el eje Y para que coincida con el sistema de coordenadas del mapa
         const y = imgHeight - ((northing - mapBounds.minY) / (mapBounds.maxY - mapBounds.minY)) * imgHeight;
-        
-        return { x: x, y: y };
+        return { x, y };
     }
     
     function imageToPSAD56(x, y) {
-        if (!mapImage || !mapImage.complete) return null;
+        const imgWidth = modalMapImage.clientWidth;
+        const imgHeight = modalMapImage.clientHeight;
+        if (imgWidth === 0 || imgHeight === 0) return null;
         
-        // Obtener dimensiones reales de la imagen visible
-        const imgWidth = mapImage.clientWidth;
-        const imgHeight = mapImage.clientHeight;
-        
-        // Convertir coordenadas de imagen a PSAD56
         const easting = mapBounds.minX + (x / imgWidth) * (mapBounds.maxX - mapBounds.minX);
-        // Invertir el eje Y para que coincida con el sistema de coordenadas del mapa
         const northing = mapBounds.minY + ((imgHeight - y) / imgHeight) * (mapBounds.maxY - mapBounds.minY);
         
         return { x: easting, y: northing };
     }
     
-    function getTagColor(tag) {
-        switch(tag) {
-            case 'importante': return '#e74c3c'; // Rojo
-            case 'novedad': return '#f1c40f';   // Amarillo
-            case 'rutina': return '#3498db';    // Azul
-            default: return '#bdc3c7';          // Gris
-        }
-    }
-    
     function showObservationDetails(observation) {
-        // Crear un modal con los detalles de la observación
         const details = `
-            <div class="observation-details-modal">
-                <h3>${observation.location}</h3>
-                <p><strong>Fecha y Hora:</strong> ${formatDateTime(observation.datetime)}</p>
-                <p><strong>Frente de Trabajo:</strong> ${formatWorkFront(observation.workFront)}</p>
-                <p><strong>Tipo:</strong> <span class="tag-display" style="background-color: ${formatTag(observation.tag).color}">${formatTag(observation.tag).name}</span></p>
-                <p><strong>Coordenadas PSAD56 UTM 17S:</strong> ${observation.coordinates.psad56.easting}E, ${observation.coordinates.psad56.northing}N</p>
-                ${observation.additionalInfo ? `<p><strong>Info Adicional:</strong> ${observation.additionalInfo}</p>` : ''}
-                ${observation.notes ? `<p><strong>Actividades Realizadas:</strong><br>${formatNotesWithBullets(observation.notes).replace(/<div class="bullet-item">/g, '• ').replace(/<\/div>/g, '<br>').replace(/<div class="regular-item">/g, '').replace(/<\/div>/g, '<br>')}</p>` : ''}
-                ${observation.photos && observation.photos.length > 0 ? `<p><strong>Fotos:</strong> ${observation.photos.length} foto(s)</p>` : ''}
-            </div>
+            <h3>${observation.location}</h3>
+            <p><strong>Fecha y Hora:</strong> ${formatDateTime(observation.datetime)}</p>
+            <p><strong>Frente de Trabajo:</strong> ${formatWorkFront(observation.workFront)}</p>
+            <p><strong>Tipo:</strong> <span class="tag-display" style="background-color: ${formatTag(observation.tag).color}">${formatTag(observation.tag).name}</span></p>
+            <p><strong>Coordenadas PSAD56 UTM 17S:</strong> ${observation.coordinates.psad56.easting}E, ${observation.coordinates.psad56.northing}N</p>
+            ${observation.additionalInfo ? `<p><strong>Info Adicional:</strong> ${observation.additionalInfo}</p>` : ''}
+            ${observation.notes ? `<p><strong>Actividades Realizadas:</strong><br>${formatNotesWithBullets(observation.notes).replace(/<div class="bullet-item">/g, '• ').replace(/<\/div>/g, '<br>').replace(/<div class="regular-item">/g, '').replace(/<\/div>/g, '<br>')}</p>` : ''}
+            ${observation.photos?.length > 0 ? `<p><strong>Fotos:</strong> ${observation.photos.length} foto(s)</p>` : ''}
         `;
-        
-        // Mostrar los detalles (podríamos usar un modal o una notificación)
-        alert(details.replace(/<[^>]*>/g, '')); // Por ahora, usar alert para mostrar los detalles
+        // This should be a modal, but for now, it's an alert.
+        alert(details.replace(/<[^>]*>/g, ''));
     }
     
-    // Actualizar marcadores cuando se guarden nuevas observaciones
-    const originalSaveObservation = saveObservation;
-    saveObservation = function(observation) {
-        originalSaveObservation(observation);
-        if (mapInitialized) {
-            setTimeout(updateMapMarkers, 100); // Pequeño retraso para asegurar que se guardó
-        }
-    };
-    
-    // Actualizar marcadores cuando se eliminen observaciones
-    const originalDeleteObservation = deleteObservation;
-    deleteObservation = function(id) {
-        originalDeleteObservation(id);
-        if (mapInitialized) {
-            setTimeout(updateMapMarkers, 100); // Pequeño retraso para asegurar que se eliminó
-        }
-    };
-
-        // Funcionalidad del modal del mapa para colocar un pin
-        try {
-            if (placePinBtn && mapModal) {
-                // Remover cualquier evento previo para evitar duplicados
-                placePinBtn.replaceWith(placePinBtn.cloneNode(true));
-                const newPlacePinBtn = document.getElementById('place-pin-btn');
-                
-                newPlacePinBtn.addEventListener('click', () => {
-                    console.log('Botón PIN clickeado'); // Debug message
-                    mapModal.style.display = 'block';
-                    mapModal.style.zIndex = '2001'; // Asegurar que esté en frente
-                    console.log('Modal debería estar visible ahora'); // Debug message
-                });
-                console.log('Evento de PIN añadido correctamente'); // Debug message
-            } else {
-                console.error('Error: No se encontraron los elementos necesarios para el botón PIN');
-                console.log('placePinBtn existe:', !!placePinBtn);
-                console.log('mapModal existe:', !!mapModal);
-            }
-
-            if (closeMapModalBtn && mapModal) {
-                closeMapModalBtn.addEventListener('click', () => {
-                    mapModal.style.display = 'none';
-                });
-            }
-
-            if (modalMapContainer && modalMapImage && modalMapPin) {
-                modalMapContainer.addEventListener('click', (e) => {
-                    if (e.target === modalMapContainer || e.target === modalMapImage) {
-                        const rect = modalMapImage.getBoundingClientRect();
-                        const x = e.clientX - rect.left;
-                        const y = e.clientY - rect.top;
-
-                        modalMapPin.style.left = `${x}px`;
-                        modalMapPin.style.top = `${y}px`;
-                        modalMapPin.style.display = 'block';
-
-                        selectedPinCoords = { x, y };
-                    }
-                });
-            }
-
-            if (confirmLocationBtn && mapModal) {
-                confirmLocationBtn.addEventListener('click', () => {
-                    if (selectedPinCoords && typeof imageToPSAD56 === 'function') {
-                        const psad56Coords = imageToPSAD56(selectedPinCoords.x, selectedPinCoords.y);
-                        if (psad56Coords) {
-                            if (locationInput) {
-                                locationInput.value = `PSAD56: ${psad56Coords.x.toFixed(3)}, ${psad56Coords.y.toFixed(3)}`;
-                            }
-                            if (coordinatesSpan) {
-                                coordinatesSpan.innerHTML = `<strong>PSAD56 UTM 17S:</strong> ${psad56Coords.x.toFixed(0)}E, ${psad56Coords.y.toFixed(0)}N`;
-                            }
-                            if (locationDisplay) {
-                                locationDisplay.classList.add('show');
-                            }
-                            showMessage('Ubicación seleccionada desde el mapa.');
-                        }
-                        mapModal.style.display = 'none';
-                    } else {
-                        if (typeof imageToPSAD56 !== 'function') {
-                            console.error('Error: La función imageToPSAD56 no está definida');
-                        }
-                    }
-                });
-            }
-        } catch (error) {
-            console.error('Error en la funcionalidad del PIN:', error);
-        }
-
-        // Función adicional de seguridad para garantizar que el botón PIN funcione
-        try {
-            const pinBtn = document.getElementById('place-pin-btn');
-            if (pinBtn) {
-                // Agregar un event listener más robusto
-                pinBtn.removeEventListener('click', null); // Remover cualquier listener anterior
-                pinBtn.addEventListener('click', function(event) {
-                    event.preventDefault();
-                    event.stopPropagation();
-                    console.log('Botón PIN clickeado - Método definitivo');
-                    const modal = document.getElementById('map-modal');
-                    if (modal) {
-                        modal.style.display = 'block';
-                        modal.style.zIndex = '2001';
-                        console.log('Modal del mapa mostrado - Método definitivo');
-                    } else {
-                        console.error('mapModal no encontrado en método definitivo');
-                    }
-                });
-                console.log('Evento de PIN definitivo agregado');
-            } else {
-                console.error('place-pin-btn no encontrado en método definitivo');
-            }
-        } catch (error) {
-            console.error('Error al agregar el evento de PIN definitivo:', error);
-        }
-
-        window.addEventListener('click', (event) => {
-            if (mapModal && event.target == mapModal) {
-                mapModal.style.display = 'none';
-            }
-        });
-    } catch (error) {
-        console.error('Error general en el DOMContentLoaded:', error);
+    if (mapInitialized) {
+        updateMapMarkers();
     }
 });
 
-// Añadir Toastify si no está disponible
+// Fallback for Toastify
 if (typeof Toastify === 'undefined') {
-    // Si no está disponible, mostrar mensaje de fallback
-    window.showMessage = function(message) {
-        alert(message);
-    };
+    window.showMessage = alert;
 }
