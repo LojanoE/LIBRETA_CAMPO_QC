@@ -375,8 +375,40 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
     
+    // Get reference to the "otros" input field and its container
+    const otrosInputGroup = document.getElementById('otros-input-group');
+    const otrosInput = document.getElementById('otros-input');
+    
+    // Get references to the search input and options
+    const workFrontSearch = document.getElementById('work-front-search');
+    const workFrontOptionsContainer = document.getElementById('work-front-options');
+    
     workFrontSelect.addEventListener('change', function() {
         additionalInfoGroup.style.display = this.value === 'drenes_plataforma' ? 'block' : 'none';
+        
+        // Show manual input group for 'otros' (Otris)
+        if (this.value === 'otros') {
+            otrosInputGroup.style.display = 'block';
+        } else {
+            otrosInputGroup.style.display = 'none';
+        }
+    });
+    
+    // Add search functionality for work front options
+    workFrontSearch.addEventListener('input', function() {
+        const searchTerm = this.value.toLowerCase();
+        const options = workFrontOptionsContainer.querySelectorAll('.dropdown-option');
+        
+        options.forEach(option => {
+            const text = option.textContent.toLowerCase();
+            const value = option.getAttribute('data-value').toLowerCase();
+            
+            if (text.includes(searchTerm) || value.includes(searchTerm)) {
+                option.style.display = 'block';
+            } else {
+                option.style.display = 'none';
+            }
+        });
     });
     
     if (workFrontSelect.value === 'drenes_plataforma') {
@@ -561,6 +593,15 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         }
 
+        // If 'otros' is selected and there's manual input, use the manual input value
+        let workFrontValue = document.getElementById('work-front').value;
+        if (workFrontValue === 'otros' && otrosInput.value.trim() !== '') {
+            workFrontValue = otrosInput.value.trim();
+        } else if (workFrontValue === 'otros' && otrosInput.value.trim() === '') {
+            // If 'otros' is selected but no manual input was provided, use 'Otris' as the value
+            workFrontValue = 'Otris';
+        }
+
         const formData = {
             id: Date.now(),
             datetime: document.getElementById('date-time').value,
@@ -569,7 +610,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 wgs84: extractWGS84Coords(document.getElementById('location').value),
                 psad56: extractPSAD56Coords(coordinatesSpan.textContent)
             },
-            workFront: document.getElementById('work-front').value,
+            workFront: workFrontValue,
             tag: document.getElementById('tag').value,
             additionalInfo: document.getElementById('additional-info').value,
             notes: notesTextarea.value,
@@ -585,6 +626,10 @@ document.addEventListener('DOMContentLoaded', function() {
         coordinatesSpan.textContent = '';
         photoPreview.innerHTML = '';
         additionalInfoGroup.style.display = 'none';
+        // Hide the otros input group when form is reset
+        otrosInputGroup.style.display = 'none';
+        // Ensure the work front dropdown shows the placeholder text after reset
+        document.getElementById('selected-work-front').textContent = 'Seleccione un frente';
         showMessage('¡Observación guardada exitosamente!');
         loadObservations();
     });
@@ -790,7 +835,102 @@ document.addEventListener('DOMContentLoaded', function() {
             'banda_6': 'Banda 6',
             'dren_inclinado': 'Dren Inclinado',
             'talud': 'Talud',
-            'drenes_plataforma': 'Drenes y Plataforma'
+            'drenes_plataforma': 'Drenes y Plataforma',
+            'acceso_835': 'Acceso 835',
+            'acceso_870': 'Acceso 870',
+            'acceso_banda_y_p865': 'Acceso Banda y P865',
+            'acceso_de_estabilizacion': 'Acceso de estabilización',
+            'acceso_fbc5': 'Acceso FBC5',
+            'acceso_p960_p980': 'Acceso P960 - P980',
+            'acceso_p980_via_12': 'Acceso P980 - Via 12',
+            'acceso_subpresa': 'Acceso SubPresa',
+            'acceso_sur_c970': 'Acceso Sur C970',
+            'bypass_via_del_condor': 'Baipás Vía del Cóndor',
+            'berma_de_refuerzo_p830': 'Berma de refuerzo P830',
+            'c980_ed_p895_sub1': 'C980-ED P895 (Subsecuencia 1)',
+            'c980_ed_p920_sub1': 'C980-ED P920 (Subsecuencia 1)',
+            'c980_ei_p890_sub1': 'C980-EI P890 (Subsecuencia 1)',
+            'corona_960': 'Corona 960',
+            'corona_970': 'Corona 970',
+            'coronamiento_945': 'Coronamiento 945',
+            'dren_28_a': 'Dren 28 A',
+            'dren_980_a': 'Dren 980-A',
+            'dren_980_b': 'Dren 980-B',
+            'dren_acceso_p980': 'Dren Acceso P980',
+            'dren_basal': 'Dren Basal',
+            'dren_d_24': 'Dren D-24',
+            'dren_d_25': 'Dren D-25',
+            'dren_de_derivacion': 'Dren de Derivación',
+            'dren_derivacion_01': 'Dren de Derivación D-01',
+            'dren_derivacion_02': 'Dren de Derivación D-02',
+            'dren_derivacion_03': 'Dren de Derivación D-03',
+            'dren_derivacion_04': 'Dren de Derivación D-04',
+            'dren_derivacion_05': 'Dren de Derivación D-05',
+            'dren_derivacion_06': 'Dren de Derivación D-06',
+            'dren_derivacion_vc': 'Dren de Derivación D-V.C.',
+            'dren_derivacion_p980': 'Dren de derivación P980',
+            'dren_derivacion_37': 'Dren Derivación 37',
+            'dren_existente_p885': 'Dren existente P885',
+            'dren_inclinado': 'Dren Inclinado',
+            'dren_inclinado_p970_ei': 'Dren Inclinado P970 E.I.',
+            'dren_inclinado_subpresa': 'Dren Inclinado Subpresa',
+            'hombro_izquierdo': 'Hombro Izquierdo',
+            'impermeabilizacion_c970': 'Impermeabilizacion C970',
+            'p835': 'P835',
+            'p845_estribo_izq': 'P845 Estribo Izq.',
+            'p865_estribo_der': 'P865 Estribo der',
+            'p865_estribo_izq_1': 'P865 Estribo Izq',
+            'p865_estribo_izq_2': 'P865 Estribo Izq',
+            'p870_acceso_fbc6': 'P870 (acceso a la FBC6)',
+            'p885_estribo_der': 'P885 Estribo Der',
+            'p885_estribo_izq': 'P885 Estribo Izq',
+            'p895_c980_sub1': 'P895 (C980 Subsecuencia 1)',
+            'p912_estribo_der': 'P912 Estribo Der.',
+            'p912_estribo_izq': 'P912 Estribo Izq',
+            'p920_c980_sub1': 'P920 (C980 Subsecuencia 1)',
+            'p920_sub2': 'P920 (Subsecuencia 2)',
+            'p945_sub5': 'P945 (Subsecuencia 5)',
+            'p920_estribo_izquierdo': 'P920 Estribo Izquierdo',
+            'p960_acceso_fbc5': 'P960 Acceso FBC5',
+            'p960_estribo_der': 'P960 Estribo Der',
+            'p960_estribo_izq': 'P960 Estribo Izq',
+            'p970_sub3': 'P970 (Subsecuencia 3)',
+            'p980': 'P980',
+            'plataforma_890': 'Plataforma 890',
+            'plataforma_895': 'Plataforma 895',
+            'plataforma_920': 'Plataforma 920',
+            'plataforma_945': 'Plataforma 945',
+            'plataforma_980': 'Plataforma 980',
+            'plataforma_dren_basal': 'Plataforma Dren Basal',
+            'plataforma_p830': 'Plataforma P830',
+            'plataforma_p845': 'Plataforma P845',
+            'plataforma_p860': 'Plataforma P860',
+            'plataforma_p865': 'Plataforma P865',
+            'plataforma_p870': 'Plataforma P870',
+            'plataforma_p875': 'Plataforma P875',
+            'plataforma_p885': 'Plataforma P885',
+            'plataforma_p895_2': 'Plataforma P895',
+            'plataforma_p912': 'Plataforma P912',
+            'plataforma_p960': 'Plataforma P960',
+            'plataforma_p970_ei': 'Plataforma P970 E.I.',
+            'plataforma_p980_ei': 'Plataforma P980 E.I.',
+            'subdren': 'Subdren',
+            'subpresa_c970': 'Subpresa C970',
+            'talud_margen_izquierdo': 'Talud Margen Izquierdo',
+            'tapete_drenante': 'Tapete Drenante',
+            'tapete_drenante_tipo_a': 'Tapete Drenante Tipo A estr. der.',
+            'tapete_drenante_tipo_b': 'Tapete Drenante Tipo B estr. izq.',
+            'tapete_subpresa': 'Tapete Subpresa',
+            'via_al_condor': 'Via al condor',
+            'via_alterna_fbc_5': 'Vía Alterna FBC 5',
+            'c980_ed_p920_sub2': 'C980-ED P920 (Subsecuencia 2)',
+            'c980_ei_p920_sub2': 'C980-EI P920 (Subsecuencia 2)',
+            'c980_ei_p950_sub2': 'C980-EI P950 (Subsecuencia 2)',
+            'c980_ed_p965_sub2': 'C980-ED P965 (Subsecuencia 2)',
+            'p920_cuerpo_principal_sub2': 'P920 Cuerpo principal (C980 Subsec 2)',
+            'p965_cuerpo_principal_sub2': 'P965 Cuerpo principal (C980 Subsec 2)',
+            'p896_cuerpo_principal_sub2': 'P896 Cuerpo principal (C980 Subsec 2)',
+            'otros': 'Otris'
         };
         return fronts[workFrontValue] || workFrontValue;
     }
