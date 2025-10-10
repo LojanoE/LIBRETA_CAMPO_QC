@@ -386,7 +386,7 @@ document.addEventListener('DOMContentLoaded', function() {
     workFrontSelect.addEventListener('change', function() {
         additionalInfoGroup.style.display = this.value === 'drenes_plataforma' ? 'block' : 'none';
         
-        // Show manual input group for 'otros' (Otris)
+        // Show manual input group for 'otros' (Otros)
         if (this.value === 'otros') {
             otrosInputGroup.style.display = 'block';
         } else {
@@ -598,8 +598,8 @@ document.addEventListener('DOMContentLoaded', function() {
         if (workFrontValue === 'otros' && otrosInput.value.trim() !== '') {
             workFrontValue = otrosInput.value.trim();
         } else if (workFrontValue === 'otros' && otrosInput.value.trim() === '') {
-            // If 'otros' is selected but no manual input was provided, use 'Otris' as the value
-            workFrontValue = 'Otris';
+            // If 'otros' is selected but no manual input was provided, use 'Otros' as the value
+            workFrontValue = 'Otros';
         }
 
         const formData = {
@@ -735,6 +735,33 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     async function exportData() {
+        if (typeof JSZip === 'undefined') {
+            alert('La biblioteca JSZip no está disponible. Por favor, asegúrese de que jszip.min.js se ha cargado correctamente.');
+            console.error('JSZip no está definido');
+            
+            // Alternativa: exportar solo los datos JSON sin archivos adjuntos
+            const observations = getObservations();
+            if (observations.length === 0) {
+                alert('No hay datos para exportar');
+                return;
+            }
+            
+            // Crear un objeto con las observaciones pero sin las fotos (porque no se puede exportar archivos sin JSZip)
+            const observationsForJson = observations.map(({ photos, photoFileNames, ...obs }) => obs);
+            
+            const dataStr = JSON.stringify(observationsForJson, null, 2);
+            const dataBlob = new Blob([dataStr], {type: 'application/json'});
+            const url = URL.createObjectURL(dataBlob);
+            const linkElement = document.createElement('a');
+            linkElement.href = url;
+            linkElement.download = `libreta_campo_${new Date().toISOString().slice(0,10)}.json`;
+            linkElement.click();
+            URL.revokeObjectURL(url);
+            
+            showMessage('Los datos se exportaron como JSON (solo se incluyeron los metadatos, sin fotos).');
+            return;
+        }
+        
         const observations = getObservations();
         if (observations.length === 0) {
             alert('No hay datos para exportar');
@@ -764,7 +791,8 @@ document.addEventListener('DOMContentLoaded', function() {
             URL.revokeObjectURL(url);
             showMessage('¡Datos exportados exitosamente en un archivo ZIP!');
         } catch (error) {
-            showMessage('Error al generar el archivo ZIP.');
+            console.error('Error al generar el archivo ZIP:', error);
+            showMessage('Error al generar el archivo ZIP: ' + error.message);
         }
     }
 
@@ -930,7 +958,7 @@ document.addEventListener('DOMContentLoaded', function() {
             'p920_cuerpo_principal_sub2': 'P920 Cuerpo principal (C980 Subsec 2)',
             'p965_cuerpo_principal_sub2': 'P965 Cuerpo principal (C980 Subsec 2)',
             'p896_cuerpo_principal_sub2': 'P896 Cuerpo principal (C980 Subsec 2)',
-            'otros': 'Otris'
+            'otros': 'Otros'
         };
         return fronts[workFrontValue] || workFrontValue;
     }
