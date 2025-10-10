@@ -2,7 +2,7 @@
 
 // 1. Set the cache version.
 // To update the app, you MUST increment this version number.
-const CACHE_VERSION = 'v1'; // e.g., 'v2', 'v3', etc.
+const CACHE_VERSION = 'v2'; // e.g., 'v2', 'v3', etc.
 const CACHE_NAME = `libreta-campo-qc-cache-${CACHE_VERSION}`;
 
 // 2. List all the files and assets your app needs to work offline.

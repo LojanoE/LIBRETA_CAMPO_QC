@@ -1,15 +1,4 @@
 // Libreta de Campo - JavaScript functionality
-// Current app version
-const APP_VERSION = '1.4.4'; // Increment this version number for updates
-
-// Function to set the version query parameter on assets
-function setVersion() {
-    const version = APP_VERSION;
-    document.getElementById('main-styles').href = `styles.css?v=${version}`;
-    document.getElementById('main-script').src = `script.js?v=${version}`;
-    document.getElementById('app-version').textContent = version;
-    updateLastSavedDisplay();
-}
 
 // Function to update last saved display
 function updateLastSavedDisplay() {
@@ -22,10 +11,7 @@ function updateLastSavedDisplay() {
 }
 
 document.addEventListener('DOMContentLoaded', function() {
-    // Set the version of the app
-    setVersion();
-    // Check for updates on page load
-    checkForUpdates();
+    updateLastSavedDisplay();
     
     // DOM elements
     const form = document.getElementById('observationForm');
@@ -462,35 +448,6 @@ document.addEventListener('DOMContentLoaded', function() {
         // Simular click en el input para seleccionar más fotos
         photoInput.click();
     });
-    
-    function checkForUpdates() {
-        const remoteVersion = '1.4.4'; 
-        if (compareVersions(APP_VERSION, remoteVersion) < 0) {
-            if (confirm(`Hay una nueva versión (${remoteVersion}) disponible. ¿Desea actualizar ahora?`)) {
-                localStorage.setItem('appVersion', remoteVersion);
-                location.reload(true);
-            }
-        }
-    }
-
-    window.addEventListener('online', () => showMessage('Conectado a internet. Comprobando actualizaciones...'));
-    
-    function compareVersions(v1, v2) {
-        const parts1 = v1.split('.').map(Number);
-        const parts2 = v2.split('.').map(Number);
-        for (let i = 0; i < Math.max(parts1.length, parts2.length); i++) {
-            const part1 = parts1[i] || 0;
-            const part2 = parts2[i] || 0;
-            if (part1 > part2) return 1;
-            if (part1 < part2) return -1;
-        }
-        return 0;
-    }
-    
-    window.forceAppUpdate = function() {
-        localStorage.setItem('appVersion', APP_VERSION);
-        showMessage(`Versión ${APP_VERSION} instalada correctamente`);
-    }
     
     function convertToPSAD56(lat, lng) {
         const latOffset = 0.0027;
