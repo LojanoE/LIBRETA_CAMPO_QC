@@ -296,7 +296,7 @@ html, body {
   top: 100%;
   left: 0;
   right: 0;
-  background: var(--card-bg);
+  background: var(--surface); /* Solid background instead of transparent */
   border: 1px solid var(--card-border);
   border-radius: 0.5rem;
   margin-top: 0.25rem;
@@ -317,7 +317,7 @@ html, body {
 }
 
 .dropdown-option:hover {
-  background: rgba(255,255,255,.1);
+  background: var(--surface-light); /* Solid background on hover */
 }
 
 .search-container {

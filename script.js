@@ -1,6 +1,6 @@
 // Libreta de Campo - JavaScript functionality
 // Current app version
-const APP_VERSION = '1.4.3'; // Increment this version number for updates
+const APP_VERSION = '1.4.4'; // Increment this version number for updates
 
 // Function to set the version query parameter on assets
 function setVersion() {
@@ -464,7 +464,7 @@ document.addEventListener('DOMContentLoaded', function() {
     });
     
     function checkForUpdates() {
-        const remoteVersion = '1.4.3'; 
+        const remoteVersion = '1.4.4'; 
         if (compareVersions(APP_VERSION, remoteVersion) < 0) {
             if (confirm(`Hay una nueva versión (${remoteVersion}) disponible. ¿Desea actualizar ahora?`)) {
                 localStorage.setItem('appVersion', remoteVersion);
@@ -782,7 +782,9 @@ document.addEventListener('DOMContentLoaded', function() {
             const url = URL.createObjectURL(dataBlob);
             const linkElement = document.createElement('a');
             linkElement.href = url;
-            linkElement.download = `libreta_campo_${new Date().toISOString().slice(0,10)}.json`;
+            const jsonNow = new Date();
+            const jsonTimestamp = jsonNow.toISOString().replace(/[:.]/g, '-').slice(0, 19); // YYYY-MM-DDTHH-mm-ss
+            linkElement.download = `libreta_campo_${jsonTimestamp}.json`;
             linkElement.click();
             URL.revokeObjectURL(url);
             
@@ -799,7 +801,9 @@ document.addEventListener('DOMContentLoaded', function() {
         const zip = new JSZip();
         const observationsForJson = observations.map(({ photos, ...obs }) => obs);
 
-        zip.file(`libreta_campo_${new Date().toISOString().slice(0,10)}.json`, JSON.stringify(observationsForJson, null, 2));
+        const now = new Date();
+        const timestamp = now.toISOString().replace(/[:.]/g, '-').slice(0, 19); // YYYY-MM-DDTHH-mm-ss
+        zip.file(`libreta_campo_${timestamp}.json`, JSON.stringify(observationsForJson, null, 2));
 
         observations.forEach(obs => {
             if (obs.photos && obs.photoFileNames) {
@@ -811,7 +815,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
         try {
             const content = await zip.generateAsync({ type: 'blob' });
-            const fileName = `export_libreta_campo_${new Date().toISOString().slice(0,10)}.zip`;
+            const fileName = `export_libreta_campo_${timestamp}.zip`;
             
             // Comprobar si la API de Compartir está disponible
             if (navigator.share && navigator.canShare) {
