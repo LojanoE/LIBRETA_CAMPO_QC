@@ -1,6 +1,6 @@
 // Libreta de Campo - JavaScript functionality
 // Current app version
-const APP_VERSION = '1.4.2'; // Increment this version number for updates
+const APP_VERSION = '1.4.3'; // Increment this version number for updates
 
 // Function to set the version query parameter on assets
 function setVersion() {
@@ -464,7 +464,7 @@ document.addEventListener('DOMContentLoaded', function() {
     });
     
     function checkForUpdates() {
-        const remoteVersion = '1.4.2'; 
+        const remoteVersion = '1.4.3'; 
         if (compareVersions(APP_VERSION, remoteVersion) < 0) {
             if (confirm(`Hay una nueva versión (${remoteVersion}) disponible. ¿Desea actualizar ahora?`)) {
                 localStorage.setItem('appVersion', remoteVersion);
@@ -811,13 +811,53 @@ document.addEventListener('DOMContentLoaded', function() {
 
         try {
             const content = await zip.generateAsync({ type: 'blob' });
-            const url = URL.createObjectURL(content);
-            const linkElement = document.createElement('a');
-            linkElement.href = url;
-            linkElement.download = `export_libreta_campo_${new Date().toISOString().slice(0,10)}.zip`;
-            linkElement.click();
-            URL.revokeObjectURL(url);
-            showMessage('¡Datos exportados exitosamente en un archivo ZIP!');
+            const fileName = `export_libreta_campo_${new Date().toISOString().slice(0,10)}.zip`;
+            
+            // Comprobar si la API de Compartir está disponible
+            if (navigator.share && navigator.canShare) {
+                // Crear un archivo blob con el contenido
+                const file = new File([content], fileName, { type: content.type });
+                
+                // Comprobar si el archivo puede ser compartido
+                if (navigator.canShare({ files: [file] })) {
+                    try {
+                        await navigator.share({
+                            title: 'Exportación Libreta de Campo',
+                            text: 'Datos exportados de la libreta de campo',
+                            files: [file]
+                        });
+                        showMessage('¡Datos compartidos exitosamente!');
+                    } catch (shareError) {
+                        // Si falla el compartir, usar método alternativo
+                        console.log('Compartir falló:', shareError);
+                        const url = URL.createObjectURL(content);
+                        const linkElement = document.createElement('a');
+                        linkElement.href = url;
+                        linkElement.download = fileName;
+                        linkElement.click();
+                        URL.revokeObjectURL(url);
+                        showMessage('¡Datos exportados exitosamente en un archivo ZIP!');
+                    }
+                } else {
+                    // Si no se puede compartir el archivo, descargar normalmente
+                    const url = URL.createObjectURL(content);
+                    const linkElement = document.createElement('a');
+                    linkElement.href = url;
+                    linkElement.download = fileName;
+                    linkElement.click();
+                    URL.revokeObjectURL(url);
+                    showMessage('¡Datos exportados exitosamente en un archivo ZIP!');
+                }
+            } else {
+                // Si la API de Compartir no está disponible, usar descarga normal
+                const url = URL.createObjectURL(content);
+                const linkElement = document.createElement('a');
+                linkElement.href = url;
+                linkElement.download = fileName;
+                linkElement.click();
+                URL.revokeObjectURL(url);
+                showMessage('¡Datos exportados exitosamente en un archivo ZIP!');
+            }
         } catch (error) {
             console.error('Error al generar el archivo ZIP:', error);
             showMessage('Error al generar el archivo ZIP: ' + error.message);
