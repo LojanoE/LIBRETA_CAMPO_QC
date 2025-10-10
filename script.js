@@ -283,20 +283,6 @@ document.addEventListener('DOMContentLoaded', function() {
     });
     
     const notesTextarea = document.getElementById('notes');
-    if (notesTextarea.value === '') {
-        notesTextarea.value = '• ';
-    }
-
-    notesTextarea.addEventListener('keydown', function(e) {
-        if (e.key === 'Enter') {
-            e.preventDefault();
-            const start = this.selectionStart;
-            const end = this.selectionEnd;
-            const value = this.value;
-            this.value = value.substring(0, start) + '\n• ' + value.substring(end);
-            this.selectionStart = this.selectionEnd = start + 3;
-        }
-    });
     
     function setDateTime() {
         const now = new Date();
@@ -417,27 +403,57 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     // Variable para almacenar los archivos de fotos seleccionados
-    let selectedPhotoFiles = [];
-    
-    photoInput.addEventListener('change', function() {
-        // Agregar las nuevas fotos a la lista existente
-        const newFiles = Array.from(this.files);
-        selectedPhotoFiles = [...selectedPhotoFiles, ...newFiles];
-        
-        // Mostrar todas las fotos en el preview
+    let selectedPhotoFiles = []; // Ahora almacena objetos { dataUrl, name }
+
+    function updatePhotoPreview() {
         photoPreview.innerHTML = '';
-        selectedPhotoFiles.forEach(file => {
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                const img = document.createElement('img');
-                img.src = e.target.result;
-                photoPreview.appendChild(img);
-            }
-            reader.readAsDataURL(file);
+        selectedPhotoFiles.forEach(photo => {
+            const img = document.createElement('img');
+            img.src = photo.dataUrl;
+            photoPreview.appendChild(img);
         });
-        
-        // Mostrar el botón de "añadir más fotos" si hay fotos seleccionadas
         addMorePhotosBtn.style.display = selectedPhotoFiles.length > 0 ? 'block' : 'none';
+    }
+
+    function loadPendingPhotos() {
+        selectedPhotoFiles = JSON.parse(localStorage.getItem('pendingPhotos') || '[]');
+        if (selectedPhotoFiles.length > 0) {
+            updatePhotoPreview();
+        }
+    }
+
+    // Cargar fotos pendientes al iniciar
+    loadPendingPhotos();
+    
+    photoInput.addEventListener('change', async function() {
+        const newFiles = Array.from(this.files);
+        if (newFiles.length === 0) return;
+
+        showMessage('Procesando imágenes...');
+        try {
+            const photoPromises = newFiles.map(async (file) => {
+                const resizedDataUrl = await resizeImage(file);
+                // create a unique name for the file
+                const uniqueName = `observacion_${Date.now()}_${Math.random().toString(36).substring(2, 8)}.jpeg`;
+                return {
+                    dataUrl: resizedDataUrl,
+                    name: uniqueName
+                };
+            });
+            
+            const newPhotos = await Promise.all(photoPromises);
+            
+            selectedPhotoFiles = [...selectedPhotoFiles, ...newPhotos];
+            
+            updatePhotoPreview();
+            
+            localStorage.setItem('pendingPhotos', JSON.stringify(selectedPhotoFiles));
+            showMessage('Imágenes listas.');
+            
+        } catch (error) {
+            showMessage('Error al procesar una imagen.');
+            console.error(error);
+        }
     });
     
     // Funcionalidad para el botón de añadir más fotos
@@ -597,24 +613,9 @@ document.addEventListener('DOMContentLoaded', function() {
     form.addEventListener('submit', async function(e) {
         e.preventDefault();
         
-        // Usar las fotos almacenadas en la variable selectedPhotoFiles
-        const photoFiles = selectedPhotoFiles;
-        let photosData = [];
-        let photoFileNames = [];
-
-        if (photoFiles.length > 0) {
-            const resizePromises = photoFiles.map(file => resizeImage(file));
-            try {
-                const resizedPhotos = await Promise.all(resizePromises);
-                resizedPhotos.forEach((resizedPhoto, index) => {
-                    photosData.push(resizedPhoto);
-                    photoFileNames.push(`observacion_${Date.now()}_${index}.jpeg`);
-                });
-            } catch (error) {
-                showMessage('Error al procesar las imágenes.');
-                return;
-            }
-        }
+        // Las fotos ya están procesadas y en 'selectedPhotoFiles'
+        const photosData = selectedPhotoFiles.map(p => p.dataUrl);
+        const photoFileNames = selectedPhotoFiles.map(p => p.name);
 
         // If 'otros' is selected and there's manual input, use the manual input value
         let workFrontValue = document.getElementById('work-front').value;
@@ -647,15 +648,17 @@ document.addEventListener('DOMContentLoaded', function() {
         setDateTime();
         locationDisplay.classList.remove('show');
         coordinatesSpan.textContent = '';
-        photoPreview.innerHTML = '';
         additionalInfoGroup.style.display = 'none';
         // Hide the otros input group when form is reset
         otrosInputGroup.style.display = 'none';
         // Ensure the work front dropdown shows the placeholder text after reset
         document.getElementById('selected-work-front').textContent = 'Seleccione un frente';
-        // Resetear la variable de fotos seleccionadas y ocultar el botón de añadir más fotos
+        
+        // Limpiar fotos pendientes
         selectedPhotoFiles = [];
-        addMorePhotosBtn.style.display = 'none';
+        localStorage.removeItem('pendingPhotos');
+        updatePhotoPreview();
+
         showMessage('¡Observación guardada exitosamente!');
         loadObservations();
     });
