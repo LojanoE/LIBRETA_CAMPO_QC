@@ -48,6 +48,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const coordinatesSpan = document.getElementById('coordinates');
     const photoInput = document.getElementById('photo');
     const photoPreview = document.getElementById('photo-preview');
+    const addMorePhotosBtn = document.getElementById('add-more-photos');
     const mainContent = document.getElementById('main-content');
     const mapModal = document.getElementById('map-modal');
     const placePinBtn = document.getElementById('place-pin-btn');
@@ -415,9 +416,17 @@ document.addEventListener('DOMContentLoaded', function() {
         additionalInfoGroup.style.display = 'block';
     }
     
+    // Variable para almacenar los archivos de fotos seleccionados
+    let selectedPhotoFiles = [];
+    
     photoInput.addEventListener('change', function() {
+        // Agregar las nuevas fotos a la lista existente
+        const newFiles = Array.from(this.files);
+        selectedPhotoFiles = [...selectedPhotoFiles, ...newFiles];
+        
+        // Mostrar todas las fotos en el preview
         photoPreview.innerHTML = '';
-        Array.from(this.files).forEach(file => {
+        selectedPhotoFiles.forEach(file => {
             const reader = new FileReader();
             reader.onload = function(e) {
                 const img = document.createElement('img');
@@ -426,6 +435,17 @@ document.addEventListener('DOMContentLoaded', function() {
             }
             reader.readAsDataURL(file);
         });
+        
+        // Mostrar el botón de "añadir más fotos" si hay fotos seleccionadas
+        addMorePhotosBtn.style.display = selectedPhotoFiles.length > 0 ? 'block' : 'none';
+    });
+    
+    // Funcionalidad para el botón de añadir más fotos
+    addMorePhotosBtn.addEventListener('click', function() {
+        // Limpiar el input de archivos para permitir volver a seleccionar los mismos archivos si es necesario
+        photoInput.value = '';
+        // Simular click en el input para seleccionar más fotos
+        photoInput.click();
     });
     
     function checkForUpdates() {
@@ -566,6 +586,8 @@ document.addEventListener('DOMContentLoaded', function() {
             locationDisplay.classList.remove('show');
             coordinatesSpan.textContent = '';
             photoPreview.innerHTML = '';
+            selectedPhotoFiles = []; // Limpiar la variable de fotos seleccionadas
+            addMorePhotosBtn.style.display = 'none'; // Ocultar el botón de añadir más fotos
             additionalInfoGroup.style.display = 'none';
         }
     });
@@ -575,12 +597,13 @@ document.addEventListener('DOMContentLoaded', function() {
     form.addEventListener('submit', async function(e) {
         e.preventDefault();
         
-        const photoFiles = document.getElementById('photo').files;
+        // Usar las fotos almacenadas en la variable selectedPhotoFiles
+        const photoFiles = selectedPhotoFiles;
         let photosData = [];
         let photoFileNames = [];
 
         if (photoFiles.length > 0) {
-            const resizePromises = Array.from(photoFiles).map(file => resizeImage(file));
+            const resizePromises = photoFiles.map(file => resizeImage(file));
             try {
                 const resizedPhotos = await Promise.all(resizePromises);
                 resizedPhotos.forEach((resizedPhoto, index) => {
@@ -630,6 +653,9 @@ document.addEventListener('DOMContentLoaded', function() {
         otrosInputGroup.style.display = 'none';
         // Ensure the work front dropdown shows the placeholder text after reset
         document.getElementById('selected-work-front').textContent = 'Seleccione un frente';
+        // Resetear la variable de fotos seleccionadas y ocultar el botón de añadir más fotos
+        selectedPhotoFiles = [];
+        addMorePhotosBtn.style.display = 'none';
         showMessage('¡Observación guardada exitosamente!');
         loadObservations();
     });
