@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'v3';
+const CACHE_VERSION = 'v5';
 const CACHE_NAME = `libreta-campo-qc-cache-${CACHE_VERSION}`;
 const APP_SHELL_URLS = [
   'index.html',
@@ -40,6 +40,8 @@ self.addEventListener('activate', event => {
           }
         })
       );
+    }).then(() => {
+      console.log('[SW] New service worker activated');
     })
   );
 });
@@ -53,16 +55,34 @@ self.addEventListener('fetch', event => {
         if (cachedResponse) {
           return cachedResponse;
         }
-        // If it's not in the cache, try to fetch it from the network.
-        return fetch(event.request);
-      })
-      .catch(error => {
-        // If the fetch fails (e.g., user is offline), and it's a navigation request,
-        // serve the fallback page from the cache.
-        console.log('[SW] Fetch failed; returning offline fallback.', error);
+        // For navigation requests (HTML pages), serve fallback when offline
         if (event.request.mode === 'navigate') {
-          return caches.match(FALLBACK_URL);
+          return fetch(event.request).catch(() => {
+            console.log('[SW] Fetch failed; returning offline fallback.');
+            return caches.match(FALLBACK_URL);
+          });
         }
+        // For other requests, try to fetch from network, then fallback to cache
+        return fetch(event.request).then(response => {
+          // If request succeeded, cache a copy for future use
+          if (response.status === 200) {
+            const responseClone = response.clone();
+            caches.open(CACHE_NAME).then(cache => {
+              cache.put(event.request, responseClone);
+            });
+          }
+          return response;
+        }).catch(() => {
+          // If network fails and it's not in cache, return offline fallback
+          if (event.request.destination === 'document') {
+            return caches.match(FALLBACK_URL);
+          }
+          // For other resources that are not in cache, return error
+          return new Response('', {
+            status: 408,
+            statusText: 'Request timeout'
+          });
+        });
       })
   );
 });
