@@ -1,0 +1,22 @@
+
+{
+  "name": "Libreta de Campo - QC",
+  "short_name": "LibretaQC",
+  "description": "Registro de observaciones de campo con funcionalidad offline.",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#0b1220",
+  "theme_color": "#0ea5e9",
+  "icons": [
+    {
+      "src": "RAC-FOT.jpg",
+      "sizes": "192x192",
+      "type": "image/jpeg"
+    },
+    {
+      "src": "RAC-FOT.jpg",
+      "sizes": "512x512",
+      "type": "image/jpeg"
+    }
+  ]
+}
