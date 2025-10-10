@@ -1,6 +1,6 @@
 // Libreta de Campo - JavaScript functionality
 // Current app version
-const APP_VERSION = '1.4.1'; // Increment this version number for updates
+const APP_VERSION = '1.4.2'; // Increment this version number for updates
 
 // Function to set the version query parameter on assets
 function setVersion() {
@@ -464,7 +464,7 @@ document.addEventListener('DOMContentLoaded', function() {
     });
     
     function checkForUpdates() {
-        const remoteVersion = '1.4.1'; 
+        const remoteVersion = '1.4.2'; 
         if (compareVersions(APP_VERSION, remoteVersion) < 0) {
             if (confirm(`Hay una nueva versión (${remoteVersion}) disponible. ¿Desea actualizar ahora?`)) {
                 localStorage.setItem('appVersion', remoteVersion);
