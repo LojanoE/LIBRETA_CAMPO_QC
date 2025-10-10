@@ -1,47 +1,41 @@
-// --- Service Worker for Libreta de Campo QC ---
-
-// 1. Set the cache version.
-// To update the app, you MUST increment this version number.
-const CACHE_VERSION = 'v2'; // e.g., 'v2', 'v3', etc.
+const CACHE_VERSION = 'v3';
 const CACHE_NAME = `libreta-campo-qc-cache-${CACHE_VERSION}`;
-
-// 2. List all the files and assets your app needs to work offline.
-const urlsToCache = [
-  './', // This caches the root URL of your app
-  './index.html',
-  './styles.css',
-  './script.js',
-  './jszip.min.js',
-  './RAC-FOT.jpg',
+const APP_SHELL_URLS = [
+  'index.html',
+  'styles.css',
+  'script.js',
+  'jszip.min.js',
+  'RAC-FOT.jpg',
   'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css'
 ];
 
-// --- SERVICE WORKER LOGIC (No need to edit below this line) ---
+// A fallback page to show when the user is offline and the requested page isn't cached.
+const FALLBACK_URL = 'index.html';
 
-// Installation: Caches all the specified files.
 self.addEventListener('install', event => {
-  self.skipWaiting(); // Force the new service worker to activate immediately
+  self.skipWaiting();
   event.waitUntil(
-    caches.open(CACHE_NAME)
-      .then(cache => {
-        console.log(`[Service Worker] Caching files for version: ${CACHE_VERSION}`);
-        return cache.addAll(urlsToCache);
-      })
-      .catch(err => {
-        console.error('[Service Worker] Failed to cache files:', err);
-      })
+    caches.open(CACHE_NAME).then(cache => {
+      console.log(`[SW] Caching app shell for version ${CACHE_VERSION}`);
+      // Add fallback URL to cache first.
+      return cache.add(FALLBACK_URL).then(() => {
+        // Then add the rest of the app shell.
+        // addAll is atomic, if one fails, all fail.
+        return cache.addAll(APP_SHELL_URLS);
+      }).catch(error => {
+        console.error('[SW] Failed to cache app shell:', error);
+      });
+    })
   );
 });
 
-// Activation: Cleans up old caches.
 self.addEventListener('activate', event => {
   event.waitUntil(
     caches.keys().then(cacheNames => {
       return Promise.all(
         cacheNames.map(cacheName => {
-          // If the cache name is not the current one, delete it.
           if (cacheName !== CACHE_NAME) {
-            console.log(`[Service Worker] Deleting old cache: ${cacheName}`);
+            console.log(`[SW] Deleting old cache: ${cacheName}`);
             return caches.delete(cacheName);
           }
         })
@@ -50,17 +44,25 @@ self.addEventListener('activate', event => {
   );
 });
 
-// Fetch: Serves cached content when offline.
 self.addEventListener('fetch', event => {
   event.respondWith(
+    // Try to get the response from the cache.
     caches.match(event.request)
-      .then(response => {
-        // If the request is in the cache, return the cached response.
-        if (response) {
-          return response;
+      .then(cachedResponse => {
+        // If it's in the cache, return it.
+        if (cachedResponse) {
+          return cachedResponse;
         }
-        // Otherwise, fetch the request from the network.
+        // If it's not in the cache, try to fetch it from the network.
         return fetch(event.request);
+      })
+      .catch(error => {
+        // If the fetch fails (e.g., user is offline), and it's a navigation request,
+        // serve the fallback page from the cache.
+        console.log('[SW] Fetch failed; returning offline fallback.', error);
+        if (event.request.mode === 'navigate') {
+          return caches.match(FALLBACK_URL);
+        }
       })
   );
 });
