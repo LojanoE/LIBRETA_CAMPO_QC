@@ -23,6 +23,10 @@ document.addEventListener('DOMContentLoaded', function() {
     const workFrontHeader = document.getElementById('work-front-header');
     const workFrontOptions = document.getElementById('work-front-options');
     const selectedWorkFront = document.getElementById('selected-work-front');
+    const coronamientoSelect = document.getElementById('coronamiento'); // hidden input
+    const coronamientoHeader = document.getElementById('coronamiento-header');
+    const coronamientoOptions = document.getElementById('coronamiento-options');
+    const selectedCoronamiento = document.getElementById('selected-coronamiento');
     const tagSelect = document.getElementById('tag'); // hidden input
     const tagHeader = document.getElementById('tag-header');
     const tagOptions = document.getElementById('tag-options');
@@ -348,6 +352,24 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
     
+    // Coronamiento dropdown functionality
+    coronamientoHeader.addEventListener('click', function(e) {
+        e.stopPropagation();
+        toggleDropdown('coronamiento-dropdown');
+    });
+
+    document.querySelectorAll('#coronamiento-options .dropdown-option').forEach(option => {
+        option.addEventListener('click', function(e) {
+            e.stopPropagation();
+            const value = this.getAttribute('data-value');
+            const text = this.textContent.trim();
+            
+            coronamientoSelect.value = value;
+            selectedCoronamiento.textContent = text;
+            closeAllDropdowns();
+        });
+    });
+    
     // Get reference to the "otros" input field and its container
     const otrosInputGroup = document.getElementById('otros-input-group');
     const otrosInput = document.getElementById('otros-input');
@@ -591,6 +613,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 psad56: extractPSAD56Coords(coordinatesSpan.textContent)
             },
             workFront: workFrontValue,
+            coronamiento: coronamientoSelect.value,
             tag: document.getElementById('tag').value,
             additionalInfo: document.getElementById('additional-info').value,
             notes: notesTextarea.value,
@@ -1010,6 +1033,16 @@ document.addEventListener('DOMContentLoaded', function() {
             'otros': 'Otros'
         };
         return fronts[workFrontValue] || workFrontValue;
+    }
+
+    function formatCoronamiento(coronamientoValue) {
+        const coronamientos = {
+            'c970': 'C970',
+            'c980': 'C980',
+            'c960': 'C960',
+            'ninguno': 'Ninguno'
+        };
+        return coronamientos[coronamientoValue] || coronamientoValue;
     }
 
     function formatTag(tagValue) {
