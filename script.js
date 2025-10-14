@@ -417,21 +417,16 @@ document.addEventListener('DOMContentLoaded', function() {
         photoPreview.innerHTML = '';
         selectedPhotoFiles.forEach(photo => {
             const img = document.createElement('img');
-            img.src = photo.dataUrl;
+            const photoURL = URL.createObjectURL(photo.file);
+            img.src = photoURL;
+            img.onload = () => URL.revokeObjectURL(photoURL); // Revoke URL after image loads
             photoPreview.appendChild(img);
         });
         addMorePhotosBtn.style.display = selectedPhotoFiles.length > 0 ? 'block' : 'none';
     }
 
-    function loadPendingPhotos() {
-        selectedPhotoFiles = JSON.parse(localStorage.getItem('pendingPhotos') || '[]');
-        if (selectedPhotoFiles.length > 0) {
-            updatePhotoPreview();
-        }
-    }
-
     // Cargar fotos pendientes al iniciar
-    loadPendingPhotos();
+    // loadPendingPhotos(); // No longer needed with IndexedDB
     
     const saveBtn = document.querySelector('#observationForm button[type="submit"]');
 
@@ -440,11 +435,7 @@ document.addEventListener('DOMContentLoaded', function() {
             EXIF.getData(file, async function() {
                 try {
                     const metadata = EXIF.getAllTags(this);
-                    const originalDataUrl = await new Promise(res => {
-                        const reader = new FileReader();
-                        reader.onload = e => res(e.target.result);
-                        reader.readAsDataURL(file);
-                    });
+                    console.log('EXIF Metadata:', metadata);
                     const uniqueName = `observacion_${Date.now()}_${Math.random().toString(36).substring(2, 8)}.jpeg`;
 
                     if (metadata.GPSLatitude && metadata.GPSLongitude) {
@@ -458,8 +449,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     }
 
                     resolve({
-                        dataUrl: originalDataUrl,
-                        originalDataUrl: originalDataUrl,
+                        file: file, // Store the file (Blob) directly
                         name: uniqueName,
                         metadata: {
                             dateTime: metadata.DateTimeOriginal,
@@ -487,7 +477,6 @@ document.addEventListener('DOMContentLoaded', function() {
             const newPhotos = await Promise.all(newFiles.map(processPhotoFile));
             selectedPhotoFiles = [...selectedPhotoFiles, ...newPhotos];
             updatePhotoPreview();
-            localStorage.setItem('pendingPhotos', JSON.stringify(selectedPhotoFiles));
         } catch (error) {
             showMessage('Error al procesar una o más imágenes.');
             console.error(error);
@@ -637,8 +626,7 @@ document.addEventListener('DOMContentLoaded', function() {
     form.addEventListener('submit', async function(e) {
         e.preventDefault();
         
-        const photosData = selectedPhotoFiles.map(p => p.dataUrl);
-        const originalPhotosData = selectedPhotoFiles.map(p => p.originalDataUrl);
+        const photoFiles = selectedPhotoFiles.map(p => p.file);
         const photoFileNames = selectedPhotoFiles.map(p => p.name);
         const photoMetadata = selectedPhotoFiles.map(p => p.metadata);
 
@@ -664,14 +652,13 @@ document.addEventListener('DOMContentLoaded', function() {
             tag: document.getElementById('tag').value,
             additionalInfo: document.getElementById('additional-info').value,
             notes: notesTextarea.value,
-            photos: photosData,
-            originalPhotos: originalPhotosData,
+            photos: photoFiles,
             photoFileNames: photoFileNames,
             photoMetadata: photoMetadata, // Add metadata here
             timestamp: new Date().toISOString()
         };
         
-        saveObservation(formData);
+        await saveObservationDB(formData);
         form.reset();
         setDateTime();
         locationDisplay.classList.remove('show');
@@ -684,7 +671,6 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // Limpiar fotos pendientes
         selectedPhotoFiles = [];
-        localStorage.removeItem('pendingPhotos');
         updatePhotoPreview();
 
         showMessage('¡Observación guardada exitosamente!');
@@ -693,30 +679,16 @@ document.addEventListener('DOMContentLoaded', function() {
     
     exportBtn.addEventListener('click', exportData);
     
-    clearBtn.addEventListener('click', function() {
+    clearBtn.addEventListener('click', async function() {
         if (confirm('¿Está seguro de que desea eliminar todas las observaciones? Esta acción no se puede deshacer.')) {
-            localStorage.removeItem('observations');
-            localStorage.removeItem('lastSaved');
+            await clearAllObservationsDB();
             loadObservations();
-            updateLastSavedDisplay();
             showMessage('Todas las observaciones han sido eliminadas');
         }
     });
     
-    function saveObservation(observation) {
-        let observations = getObservations();
-        observations.push(observation);
-        localStorage.setItem('observations', JSON.stringify(observations));
-        localStorage.setItem('lastSaved', new Date().toISOString());
-        updateLastSavedDisplay();
-    }
-    
-    function getObservations() {
-        return JSON.parse(localStorage.getItem('observations') || '[]');
-    }
-    
-    function loadObservations() {
-        const observations = getObservations();
+    async function loadObservations() {
+        const observations = await getObservationsDB();
         observationsList.innerHTML = '';
         if (observations.length === 0) {
             observationsList.innerHTML = '<div class="no-observations">No hay observaciones registradas aún</div>';
@@ -734,6 +706,7 @@ document.addEventListener('DOMContentLoaded', function() {
             if (observation.photos && observation.photos.length > 0) {
                 photosHTML = `<div class="observation-detail full-width"><strong>Fotos:</strong><br><div class="photo-thumbnails">
                     ${observation.photos.map((photo, index) => {
+                        const photoURL = URL.createObjectURL(photo);
                         let metadataHTML = '';
                         if (observation.photoMetadata && observation.photoMetadata[index]) {
                             const metadata = observation.photoMetadata[index];
@@ -746,14 +719,14 @@ document.addEventListener('DOMContentLoaded', function() {
                             }
                             metadataHTML = `<div class="photo-metadata">${dateTime}${gps}</div>`;
                         }
-                        return `<div><img src="${photo}" alt="Foto ${index + 1}" class="observation-photo-thumbnail">${metadataHTML}</div>`;
+                        return `<div><img src="${photoURL}" alt="Foto ${index + 1}" class="observation-photo-thumbnail" onload="URL.revokeObjectURL(this.src)">${metadataHTML}</div>`;
                     }).join('')}
                 </div></div>`;
             }
 
             let downloadBtnsHTML = '';
-            if (observation.originalPhotos && observation.originalPhotos.length > 0) {
-                downloadBtnsHTML = observation.originalPhotos.map((photo, index) => 
+            if (observation.photos && observation.photos.length > 0) {
+                downloadBtnsHTML = observation.photos.map((photo, index) => 
                     `<button class="download-photo-btn" data-id="${observation.id}" data-photo-index="${index}">Descargar Foto ${index + 1}</button>`
                 ).join('');
             }
@@ -782,26 +755,26 @@ document.addEventListener('DOMContentLoaded', function() {
         });
 
         document.querySelectorAll('.download-photo-btn').forEach(button => {
-            button.addEventListener('click', function() {
+            button.addEventListener('click', async function() {
                 const id = parseInt(this.getAttribute('data-id'));
                 const photoIndex = parseInt(this.getAttribute('data-photo-index'));
-                const observation = getObservations().find(obs => obs.id === id);
-                if (observation?.originalPhotos?.[photoIndex]) {
+                const observations = await getObservationsDB();
+                const observation = observations.find(obs => obs.id === id);
+                if (observation?.photos?.[photoIndex]) {
+                    const photoBlob = observation.photos[photoIndex];
                     const link = document.createElement('a');
-                    link.href = observation.originalPhotos[photoIndex];
+                    link.href = URL.createObjectURL(photoBlob);
                     link.download = observation.photoFileNames[photoIndex] || `foto_${id}_${photoIndex}.jpeg`;
                     link.click();
+                    URL.revokeObjectURL(link.href);
                 }
             });
         });
     }
     
-    function deleteObservation(id) {
-        let observations = getObservations().filter(obs => obs.id !== id);
-        localStorage.setItem('observations', JSON.stringify(observations));
-        localStorage.setItem('lastSaved', new Date().toISOString());
+    async function deleteObservation(id) {
+        await deleteObservationDB(id);
         loadObservations();
-        updateLastSavedDisplay();
         showMessage('Observación eliminada');
     }
     
@@ -809,49 +782,26 @@ document.addEventListener('DOMContentLoaded', function() {
         if (typeof JSZip === 'undefined') {
             alert('La biblioteca JSZip no está disponible. Por favor, asegúrese de que jszip.min.js se ha cargado correctamente.');
             console.error('JSZip no está definido');
-            
-            // Alternativa: exportar solo los datos JSON sin archivos adjuntos
-            const observations = getObservations();
-            if (observations.length === 0) {
-                alert('No hay datos para exportar');
-                return;
-            }
-            
-            // Crear un objeto con las observaciones pero sin las fotos (porque no se puede exportar archivos sin JSZip)
-            const observationsForJson = observations.map(({ photos, originalPhotos, photoFileNames, ...obs }) => obs);
-            
-            const dataStr = JSON.stringify(observationsForJson, null, 2);
-            const dataBlob = new Blob([dataStr], {type: 'application/json'});
-            const url = URL.createObjectURL(dataBlob);
-            const linkElement = document.createElement('a');
-            linkElement.href = url;
-            const jsonNow = new Date();
-            const jsonTimestamp = jsonNow.toISOString().replace(/[:.]/g, '-').slice(0, 19); // YYYY-MM-DDTHH-mm-ss
-            linkElement.download = `libreta_campo_${jsonTimestamp}.json`;
-            linkElement.click();
-            URL.revokeObjectURL(url);
-            
-            showMessage('Los datos se exportaron como JSON (solo se incluyeron los metadatos, sin fotos).');
             return;
         }
         
-        const observations = getObservations();
+        const observations = await getObservationsDB();
         if (observations.length === 0) {
             alert('No hay datos para exportar');
             return;
         }
 
         const zip = new JSZip();
-        const observationsForJson = observations.map(({ photos, originalPhotos, ...obs }) => obs);
+        const observationsForJson = observations.map(({ photos, ...obs }) => obs);
 
         const now = new Date();
         const timestamp = now.toISOString().replace(/[:.]/g, '-').slice(0, 19); // YYYY-MM-DDTHH-mm-ss
         zip.file(`libreta_campo_${timestamp}.json`, JSON.stringify(observationsForJson, null, 2));
 
         observations.forEach(obs => {
-            if (obs.originalPhotos && obs.photoFileNames) {
-                obs.originalPhotos.forEach((photoData, index) => {
-                    zip.file(obs.photoFileNames[index], photoData.split(',')[1], { base64: true });
+            if (obs.photos && obs.photoFileNames) {
+                obs.photos.forEach((photoBlob, index) => {
+                    zip.file(obs.photoFileNames[index], photoBlob);
                 });
             }
         });
