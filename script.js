@@ -444,6 +444,11 @@ document.addEventListener('DOMContentLoaded', function() {
                     EXIF.getData(file, async function() {
                         const metadata = EXIF.getAllTags(this);
                         const resizedDataUrl = await resizeImage(file);
+                        const originalDataUrl = await new Promise(res => {
+                            const reader = new FileReader();
+                            reader.onload = e => res(e.target.result);
+                            reader.readAsDataURL(file);
+                        });
                         const uniqueName = `observacion_${Date.now()}_${Math.random().toString(36).substring(2, 8)}.jpeg`;
 
                         if (metadata.GPSLatitude && metadata.GPSLongitude) {
@@ -458,6 +463,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
                         resolve({
                             dataUrl: resizedDataUrl,
+                            originalDataUrl: originalDataUrl,
                             name: uniqueName,
                             metadata: {
                                 dateTime: metadata.DateTimeOriginal,
@@ -626,6 +632,7 @@ document.addEventListener('DOMContentLoaded', function() {
         e.preventDefault();
         
         const photosData = selectedPhotoFiles.map(p => p.dataUrl);
+        const originalPhotosData = selectedPhotoFiles.map(p => p.originalDataUrl);
         const photoFileNames = selectedPhotoFiles.map(p => p.name);
         const photoMetadata = selectedPhotoFiles.map(p => p.metadata);
 
@@ -652,6 +659,7 @@ document.addEventListener('DOMContentLoaded', function() {
             additionalInfo: document.getElementById('additional-info').value,
             notes: notesTextarea.value,
             photos: photosData,
+            originalPhotos: originalPhotosData,
             photoFileNames: photoFileNames,
             photoMetadata: photoMetadata, // Add metadata here
             timestamp: new Date().toISOString()
@@ -738,8 +746,8 @@ document.addEventListener('DOMContentLoaded', function() {
             }
 
             let downloadBtnsHTML = '';
-            if (observation.photos && observation.photos.length > 0) {
-                downloadBtnsHTML = observation.photos.map((photo, index) => 
+            if (observation.originalPhotos && observation.originalPhotos.length > 0) {
+                downloadBtnsHTML = observation.originalPhotos.map((photo, index) => 
                     `<button class="download-photo-btn" data-id="${observation.id}" data-photo-index="${index}">Descargar Foto ${index + 1}</button>`
                 ).join('');
             }
@@ -772,9 +780,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 const id = parseInt(this.getAttribute('data-id'));
                 const photoIndex = parseInt(this.getAttribute('data-photo-index'));
                 const observation = getObservations().find(obs => obs.id === id);
-                if (observation?.photos?.[photoIndex]) {
+                if (observation?.originalPhotos?.[photoIndex]) {
                     const link = document.createElement('a');
-                    link.href = observation.photos[photoIndex];
+                    link.href = observation.originalPhotos[photoIndex];
                     link.download = observation.photoFileNames[photoIndex] || `foto_${id}_${photoIndex}.jpeg`;
                     link.click();
                 }
@@ -804,7 +812,7 @@ document.addEventListener('DOMContentLoaded', function() {
             }
             
             // Crear un objeto con las observaciones pero sin las fotos (porque no se puede exportar archivos sin JSZip)
-            const observationsForJson = observations.map(({ photos, photoFileNames, ...obs }) => obs);
+            const observationsForJson = observations.map(({ photos, originalPhotos, photoFileNames, ...obs }) => obs);
             
             const dataStr = JSON.stringify(observationsForJson, null, 2);
             const dataBlob = new Blob([dataStr], {type: 'application/json'});
@@ -828,15 +836,15 @@ document.addEventListener('DOMContentLoaded', function() {
         }
 
         const zip = new JSZip();
-        const observationsForJson = observations.map(({ photos, ...obs }) => obs);
+        const observationsForJson = observations.map(({ photos, originalPhotos, ...obs }) => obs);
 
         const now = new Date();
         const timestamp = now.toISOString().replace(/[:.]/g, '-').slice(0, 19); // YYYY-MM-DDTHH-mm-ss
         zip.file(`libreta_campo_${timestamp}.json`, JSON.stringify(observationsForJson, null, 2));
 
         observations.forEach(obs => {
-            if (obs.photos && obs.photoFileNames) {
-                obs.photos.forEach((photoData, index) => {
+            if (obs.originalPhotos && obs.photoFileNames) {
+                obs.originalPhotos.forEach((photoData, index) => {
                     zip.file(obs.photoFileNames[index], photoData.split(',')[1], { base64: true });
                 });
             }
@@ -881,7 +889,8 @@ document.addEventListener('DOMContentLoaded', function() {
                     URL.revokeObjectURL(url);
                     showMessage('¡Datos exportados exitosamente en un archivo ZIP!');
                 }
-            } else {
+            }
+            else {
                 // Si la API de Compartir no está disponible, usar descarga normal
                 const url = URL.createObjectURL(content);
                 const linkElement = document.createElement('a');
