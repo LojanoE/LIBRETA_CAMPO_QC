@@ -433,61 +433,68 @@ document.addEventListener('DOMContentLoaded', function() {
     // Cargar fotos pendientes al iniciar
     loadPendingPhotos();
     
+    const saveBtn = document.querySelector('#observationForm button[type="submit"]');
+
+    async function processPhotoFile(file) {
+        return new Promise((resolve, reject) => {
+            EXIF.getData(file, async function() {
+                try {
+                    const metadata = EXIF.getAllTags(this);
+                    const resizedDataUrl = await resizeImage(file);
+                    const originalDataUrl = await new Promise(res => {
+                        const reader = new FileReader();
+                        reader.onload = e => res(e.target.result);
+                        reader.readAsDataURL(file);
+                    });
+                    const uniqueName = `observacion_${Date.now()}_${Math.random().toString(36).substring(2, 8)}.jpeg`;
+
+                    if (metadata.GPSLatitude && metadata.GPSLongitude) {
+                        const lat = convertDMSToDD(metadata.GPSLatitude, metadata.GPSLatitudeRef);
+                        const lon = convertDMSToDD(metadata.GPSLongitude, metadata.GPSLongitudeRef);
+                        const psad56Coords = convertToPSAD56(lat, lon);
+                        locationInput.value = `WGS84: ${lat.toFixed(6)}, ${lon.toFixed(6)}`;
+                        coordinatesSpan.innerHTML = `<strong>WGS84:</strong> ${lat.toFixed(6)}, ${lon.toFixed(6)} <br> <strong>PSAD56 UTM 17S:</strong> ${psad56Coords.utmEasting}E, ${psad56Coords.utmNorthing}N`;
+                        locationDisplay.classList.add('show');
+                        showMessage('Metadatos de ubicación extraídos de la foto.');
+                    }
+
+                    resolve({
+                        dataUrl: resizedDataUrl,
+                        originalDataUrl: originalDataUrl,
+                        name: uniqueName,
+                        metadata: {
+                            dateTime: metadata.DateTimeOriginal,
+                            gpsLatitude: metadata.GPSLatitude,
+                            gpsLongitude: metadata.GPSLongitude,
+                            gpsLatitudeRef: metadata.GPSLatitudeRef,
+                            gpsLongitudeRef: metadata.GPSLongitudeRef,
+                        }
+                    });
+                } catch (error) {
+                    reject(error);
+                }
+            });
+        });
+    }
+
     photoInput.addEventListener('change', async function() {
         const newFiles = Array.from(this.files);
         if (newFiles.length === 0) return;
 
-        // Procesar imágenes en segundo plano sin mostrar mensaje
+        saveBtn.disabled = true;
+        saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Procesando...';
+
         try {
-            const photoPromises = newFiles.map(file => {
-                return new Promise((resolve, reject) => {
-                    EXIF.getData(file, async function() {
-                        const metadata = EXIF.getAllTags(this);
-                        const resizedDataUrl = await resizeImage(file);
-                        const originalDataUrl = await new Promise(res => {
-                            const reader = new FileReader();
-                            reader.onload = e => res(e.target.result);
-                            reader.readAsDataURL(file);
-                        });
-                        const uniqueName = `observacion_${Date.now()}_${Math.random().toString(36).substring(2, 8)}.jpeg`;
-
-                        if (metadata.GPSLatitude && metadata.GPSLongitude) {
-                            const lat = convertDMSToDD(metadata.GPSLatitude, metadata.GPSLatitudeRef);
-                            const lon = convertDMSToDD(metadata.GPSLongitude, metadata.GPSLongitudeRef);
-                            const psad56Coords = convertToPSAD56(lat, lon);
-                            locationInput.value = `WGS84: ${lat.toFixed(6)}, ${lon.toFixed(6)}`;
-                            coordinatesSpan.innerHTML = `<strong>WGS84:</strong> ${lat.toFixed(6)}, ${lon.toFixed(6)} <br> <strong>PSAD56 UTM 17S:</strong> ${psad56Coords.utmEasting}E, ${psad56Coords.utmNorthing}N`;
-                            locationDisplay.classList.add('show');
-                            showMessage('Metadatos de ubicación extraídos de la foto.');
-                        }
-
-                        resolve({
-                            dataUrl: resizedDataUrl,
-                            originalDataUrl: originalDataUrl,
-                            name: uniqueName,
-                            metadata: {
-                                dateTime: metadata.DateTimeOriginal,
-                                gpsLatitude: metadata.GPSLatitude,
-                                gpsLongitude: metadata.GPSLongitude,
-                                gpsLatitudeRef: metadata.GPSLatitudeRef,
-                                gpsLongitudeRef: metadata.GPSLongitudeRef,
-                            }
-                        });
-                    });
-                });
-            });
-            
-            const newPhotos = await Promise.all(photoPromises);
-            
+            const newPhotos = await Promise.all(newFiles.map(processPhotoFile));
             selectedPhotoFiles = [...selectedPhotoFiles, ...newPhotos];
-            
             updatePhotoPreview();
-            
             localStorage.setItem('pendingPhotos', JSON.stringify(selectedPhotoFiles));
-            
         } catch (error) {
-            showMessage('Error al procesar una imagen.');
+            showMessage('Error al procesar una o más imágenes.');
             console.error(error);
+        } finally {
+            saveBtn.disabled = false;
+            saveBtn.innerHTML = '<i class="fas fa-save"></i> Guardar Observación';
         }
     });
 
