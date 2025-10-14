@@ -440,7 +440,6 @@ document.addEventListener('DOMContentLoaded', function() {
             EXIF.getData(file, async function() {
                 try {
                     const metadata = EXIF.getAllTags(this);
-                    const resizedDataUrl = await resizeImage(file);
                     const originalDataUrl = await new Promise(res => {
                         const reader = new FileReader();
                         reader.onload = e => res(e.target.result);
@@ -459,7 +458,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     }
 
                     resolve({
-                        dataUrl: resizedDataUrl,
+                        dataUrl: originalDataUrl,
                         originalDataUrl: originalDataUrl,
                         name: uniqueName,
                         metadata: {
@@ -913,50 +912,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
-    function resizeImage(file, maxWidth = 1280) {
-        return new Promise((resolve, reject) => {
-            // Si la imagen es pequeña, no la redimensionamos
-            if (file.size < 200000) { // Menos de 200KB, no redimensionar
-                const reader = new FileReader();
-                reader.onload = function(event) {
-                    resolve(event.target.result);
-                };
-                reader.onerror = reject;
-                reader.readAsDataURL(file);
-                return;
-            }
-            
-            const reader = new FileReader();
-            reader.onload = function(event) {
-                const img = new Image();
-                img.onload = function() {
-                    const canvas = document.createElement('canvas');
-                    const { width: w, height: h } = img;
-                    
-                    // Solo redimensionar si la imagen es mayor que el ancho máximo
-                    if (w <= maxWidth) {
-                        canvas.width = w;
-                        canvas.height = h;
-                    } else {
-                        const ratio = h / w;
-                        canvas.width = maxWidth;
-                        canvas.height = maxWidth * ratio;
-                    }
-                    
-                    const ctx = canvas.getContext('2d');
-                    // Configurar opciones para una mejor calidad/fps
-                    ctx.imageSmoothingEnabled = true;
-                    ctx.imageSmoothingQuality = 'high';
-                    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-                    resolve(canvas.toDataURL('image/jpeg', 0.8)); // Calidad 80% para mejor rendimiento
-                };
-                img.onerror = reject;
-                img.src = event.target.result;
-            }
-            reader.onerror = reject;
-            reader.readAsDataURL(file);
-        });
-    }
+
     
     function showMessage(message) {
         if (typeof Toastify === 'function') {
