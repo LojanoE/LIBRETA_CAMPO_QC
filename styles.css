@@ -448,11 +448,7 @@ html, body {
   gap: 1.5rem; 
 }
 
-@media(min-width:768px){ 
-  .grid-2 { 
-    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); 
-  } 
-}
+
 
 /* Estilos para tarjetas de observación */
 .observation-card {
@@ -513,6 +509,15 @@ html, body {
   object-fit: cover;
   border-radius: 0.5rem;
   border: 1px solid var(--card-border);
+}
+
+.photo-metadata {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    background: rgba(0,0,0,0.5);
+    padding: 0.25rem;
+    border-radius: 0 0 0.5rem 0.5rem;
+    text-align: center;
 }
 
 .delete-btn {
@@ -789,8 +794,7 @@ html, body {
   background: rgba(255,255,255,0.05);
 }
 
-/* Estilos responsivos mejorados para dispositivos móviles */
-@media (max-width: 768px) {
+@media (max-width: 1024px) {
   .container {
     padding: 0.5rem;
   }
@@ -1530,33 +1534,7 @@ html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
 }
 
 
-/* ==== TABLET & SMALL LAPTOP SAFE ZONE (<=900px) ==== */
-/* Use stacked/compact header so logos/text never overlap on mid widths */
-@media (max-width: 900px) {
-  .kpi-card { padding-top: 0 !important; }
-  .kpi-card .logo-bar {
-    position: static !important;
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    justify-content: center;
-    gap: 12px;
-    margin: 4px 0 8px 0;
-  }
-  .kpi-card .logo-bar .rdv-logo {
-    height: 36px !important;
-    max-width: 42%;
-    width: auto;
-    object-fit: contain;
-  }
-  .bilingual-title { margin-top: 0 !important; line-height: 1.15; padding: 0 6px; }
-  .bilingual-title .line1 { font-size: clamp(0.82rem, 2.2vw, 1rem) !important; }
-  .bilingual-title .line2 { font-size: clamp(0.76rem, 2.0vw, 0.95rem) !important; }
-  .bilingual-title .line3 .es { font-size: clamp(0.78rem, 2.0vw, 0.92rem) !important; }
-  .bilingual-title .line3 .cn { font-size: clamp(0.74rem, 1.9vw, 0.9rem) !important; }
-  .bilingual-title .sep { width: 92%; margin:.3rem auto .45rem; }
-  #liveCodigo { font-size: clamp(1rem, 3vw, 1.2rem) !important; line-height: 1.1; }
-}
+
 
 
 /* ==== PRINT: remove dark backgrounds/gradients so page doesn't turn black ==== */

@@ -439,14 +439,36 @@ document.addEventListener('DOMContentLoaded', function() {
 
         // Procesar imágenes en segundo plano sin mostrar mensaje
         try {
-            const photoPromises = newFiles.map(async (file) => {
-                const resizedDataUrl = await resizeImage(file);
-                // create a unique name for the file
-                const uniqueName = `observacion_${Date.now()}_${Math.random().toString(36).substring(2, 8)}.jpeg`;
-                return {
-                    dataUrl: resizedDataUrl,
-                    name: uniqueName
-                };
+            const photoPromises = newFiles.map(file => {
+                return new Promise((resolve, reject) => {
+                    EXIF.getData(file, async function() {
+                        const metadata = EXIF.getAllTags(this);
+                        const resizedDataUrl = await resizeImage(file);
+                        const uniqueName = `observacion_${Date.now()}_${Math.random().toString(36).substring(2, 8)}.jpeg`;
+
+                        if (metadata.GPSLatitude && metadata.GPSLongitude) {
+                            const lat = convertDMSToDD(metadata.GPSLatitude, metadata.GPSLatitudeRef);
+                            const lon = convertDMSToDD(metadata.GPSLongitude, metadata.GPSLongitudeRef);
+                            const psad56Coords = convertToPSAD56(lat, lon);
+                            locationInput.value = `WGS84: ${lat.toFixed(6)}, ${lon.toFixed(6)}`;
+                            coordinatesSpan.innerHTML = `<strong>WGS84:</strong> ${lat.toFixed(6)}, ${lon.toFixed(6)} <br> <strong>PSAD56 UTM 17S:</strong> ${psad56Coords.utmEasting}E, ${psad56Coords.utmNorthing}N`;
+                            locationDisplay.classList.add('show');
+                            showMessage('Metadatos de ubicación extraídos de la foto.');
+                        }
+
+                        resolve({
+                            dataUrl: resizedDataUrl,
+                            name: uniqueName,
+                            metadata: {
+                                dateTime: metadata.DateTimeOriginal,
+                                gpsLatitude: metadata.GPSLatitude,
+                                gpsLongitude: metadata.GPSLongitude,
+                                gpsLatitudeRef: metadata.GPSLatitudeRef,
+                                gpsLongitudeRef: metadata.GPSLongitudeRef,
+                            }
+                        });
+                    });
+                });
             });
             
             const newPhotos = await Promise.all(photoPromises);
@@ -462,6 +484,18 @@ document.addEventListener('DOMContentLoaded', function() {
             console.error(error);
         }
     });
+
+    function convertDMSToDD(dms, ref) {
+        if (!dms || dms.length !== 3) return 0;
+        const degrees = dms[0].numerator / dms[0].denominator;
+        const minutes = dms[1].numerator / dms[1].denominator;
+        const seconds = dms[2].numerator / dms[2].denominator;
+        let dd = degrees + minutes / 60 + seconds / 3600;
+        if (ref === "S" || ref === "W") {
+            dd = dd * -1;
+        }
+        return dd;
+    }
     
     // Funcionalidad para el botón de añadir más fotos
     addMorePhotosBtn.addEventListener('click', function() {
@@ -591,9 +625,9 @@ document.addEventListener('DOMContentLoaded', function() {
     form.addEventListener('submit', async function(e) {
         e.preventDefault();
         
-        // Las fotos ya están procesadas y en 'selectedPhotoFiles'
         const photosData = selectedPhotoFiles.map(p => p.dataUrl);
         const photoFileNames = selectedPhotoFiles.map(p => p.name);
+        const photoMetadata = selectedPhotoFiles.map(p => p.metadata);
 
         // If 'otros' is selected and there's manual input, use the manual input value
         let workFrontValue = document.getElementById('work-front').value;
@@ -619,6 +653,7 @@ document.addEventListener('DOMContentLoaded', function() {
             notes: notesTextarea.value,
             photos: photosData,
             photoFileNames: photoFileNames,
+            photoMetadata: photoMetadata, // Add metadata here
             timestamp: new Date().toISOString()
         };
         
@@ -684,7 +719,21 @@ document.addEventListener('DOMContentLoaded', function() {
             let photosHTML = '';
             if (observation.photos && observation.photos.length > 0) {
                 photosHTML = `<div class="observation-detail full-width"><strong>Fotos:</strong><br><div class="photo-thumbnails">
-                    ${observation.photos.map((photo, index) => `<img src="${photo}" alt="Foto ${index + 1}" class="observation-photo-thumbnail">`).join('')}
+                    ${observation.photos.map((photo, index) => {
+                        let metadataHTML = '';
+                        if (observation.photoMetadata && observation.photoMetadata[index]) {
+                            const metadata = observation.photoMetadata[index];
+                            const dateTime = metadata.dateTime ? `<p>Tomada: ${metadata.dateTime}</p>` : '';
+                            let gps = '';
+                            if (metadata.gpsLatitude && metadata.gpsLongitude) {
+                                const lat = convertDMSToDD(metadata.gpsLatitude, metadata.gpsLatitudeRef);
+                                const lon = convertDMSToDD(metadata.gpsLongitude, metadata.gpsLongitudeRef);
+                                gps = `<p>GPS: ${lat.toFixed(5)}, ${lon.toFixed(5)}</p>`;
+                            }
+                            metadataHTML = `<div class="photo-metadata">${dateTime}${gps}</div>`;
+                        }
+                        return `<div><img src="${photo}" alt="Foto ${index + 1}" class="observation-photo-thumbnail">${metadataHTML}</div>`;
+                    }).join('')}
                 </div></div>`;
             }
 

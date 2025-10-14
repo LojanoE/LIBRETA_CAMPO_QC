@@ -16,7 +16,7 @@
                 <img src="RAC-FOT.jpg" alt="Logo" class="logo">
             </div>
             <div class="header-content">
-                <h1><i class="fas fa-book"></i> Libreta de Campo - QC</h1>
+                <h1><i class="fas fa-book"></i> Libreta de Campo - QC-V7</h1>
                 <p class="note">Registra y almacena tus observaciones de campo localmente</p>
                 <div class="version-info note">
                     Versión: <span id="app-version"></span>
@@ -243,7 +243,7 @@
                         <div class="form-group">
                             <label for="photo"><i class="fas fa-camera"></i> Fotos (opcional):</label>
                             <div class="photo-upload-container">
-                                <input type="file" id="photo" name="photo" accept="image/*" multiple class="form-control">
+                                <input type="file" id="photo" name="photo" accept="image/*" multiple capture="environment" class="form-control">
                                 <div id="photo-preview" class="photo-preview"></div>
                                 <button type="button" id="add-more-photos" class="btn btn-secondary" style="margin-top: 10px; display: none;">
                                     <i class="fas fa-camera"></i> Añadir más fotos
@@ -377,6 +377,7 @@
         </div>
     </div>
     
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/exif-js/2.3.0/exif.min.js"></script>
     <script src="jszip.min.js"></script>
     <script src="script.js" id="main-script"></script>
 
