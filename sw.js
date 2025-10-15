@@ -1,12 +1,16 @@
-const CACHE_VERSION = 'v11';
+const CACHE_VERSION = 'v12';
 const CACHE_NAME = `libreta-campo-qc-cache-${CACHE_VERSION}`;
 const APP_SHELL_URLS = [
+  './',
   'index.html',
   'styles.css',
   'script.js',
+  'db.js',
+  'manifest.json',
   'jszip.min.js',
   'RAC-FOT.jpg',
-  'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css'
+  'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css',
+  'https://cdnjs.cloudflare.com/ajax/libs/exif-js/2.3.0/exif.min.js'
 ];
 
 // A fallback page to show when the user is offline and the requested page isn't cached.

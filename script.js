@@ -601,7 +601,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     getLocationBtn.innerHTML = '<i class="fas fa-location-crosshairs"></i> GPS';
                     getLocationBtn.disabled = false;
                 },
-                { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 }
+                { enableHighAccuracy: true, timeout: 20000, maximumAge: 0 }
             );
         } else {
             showMessage('La geolocalización no es soportada por este navegador.');
