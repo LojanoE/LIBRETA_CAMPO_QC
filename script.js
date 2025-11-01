@@ -639,8 +639,17 @@ document.addEventListener('DOMContentLoaded', function() {
             workFrontValue = 'Otros';
         }
 
+        // Check if we're editing an existing observation
+        const editId = form.getAttribute('data-edit-id');
+        let id;
+        if (editId) {
+            id = parseInt(editId);
+        } else {
+            id = Date.now(); // Create new ID for new observations
+        }
+
         const formData = {
-            id: Date.now(),
+            id: id,
             datetime: document.getElementById('date-time').value,
             location: document.getElementById('location').value,
             coordinates: {
@@ -659,6 +668,11 @@ document.addEventListener('DOMContentLoaded', function() {
         };
         
         await saveObservationDB(formData);
+        
+        // Reset form to clear edit mode
+        form.removeAttribute('data-edit-id');
+        saveBtn.innerHTML = '<i class="fas fa-save"></i> Guardar Observación';
+        
         form.reset();
         setDateTime();
         locationDisplay.classList.remove('show');
@@ -673,8 +687,16 @@ document.addEventListener('DOMContentLoaded', function() {
         selectedPhotoFiles = [];
         updatePhotoPreview();
 
-        showMessage('¡Observación guardada exitosamente!');
+        if (editId) {
+            showMessage('¡Observación actualizada exitosamente!');
+        } else {
+            showMessage('¡Observación guardada exitosamente!');
+        }
         loadObservations();
+        // Refresh the map to show updated markers
+        if (document.querySelector('.nav-btn[data-tab="mapa"].active')) {
+            loadMap();
+        }
     });
     
     exportBtn.addEventListener('click', exportData);
@@ -683,6 +705,10 @@ document.addEventListener('DOMContentLoaded', function() {
         if (confirm('¿Está seguro de que desea eliminar todas las observaciones? Esta acción no se puede deshacer.')) {
             await clearAllObservationsDB();
             loadObservations();
+            // Refresh the map to remove all markers
+            if (document.querySelector('.nav-btn[data-tab="mapa"].active')) {
+                loadMap();
+            }
             showMessage('Todas las observaciones han sido eliminadas');
         }
     });
@@ -742,6 +768,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     ${observation.notes ? `<div class="observation-detail full-width"><strong>Actividades Realizadas:</strong><div class="notes-content">${formatNotesWithBullets(observation.notes)}</div></div>` : ''}
                     ${photosHTML}
                 </div>
+                <button class="edit-btn" data-id="${observation.id}">Editar</button>
                 <button class="delete-btn" data-id="${observation.id}">Eliminar</button>
                 ${downloadBtnsHTML}
             `;
@@ -751,6 +778,12 @@ document.addEventListener('DOMContentLoaded', function() {
         document.querySelectorAll('.delete-btn').forEach(button => {
             button.addEventListener('click', function() {
                 deleteObservation(parseInt(this.getAttribute('data-id')));
+            });
+        });
+
+        document.querySelectorAll('.edit-btn').forEach(button => {
+            button.addEventListener('click', function() {
+                editObservation(parseInt(this.getAttribute('data-id')));
             });
         });
 
@@ -770,12 +803,93 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             });
         });
+        
+        // Refresh the map to show updated markers if map tab is active
+        if (document.querySelector('.nav-btn[data-tab="mapa"].active')) {
+            loadMap();
+        }
     }
     
     async function deleteObservation(id) {
         await deleteObservationDB(id);
         loadObservations();
+        // Refresh the map to remove deleted marker
+        if (document.querySelector('.nav-btn[data-tab="mapa"].active')) {
+            loadMap();
+        }
         showMessage('Observación eliminada');
+    }
+    
+    async function editObservation(id) {
+        const observations = await getObservationsDB();
+        const observation = observations.find(obs => obs.id === id);
+        
+        if (!observation) {
+            showMessage('Observación no encontrada');
+            return;
+        }
+
+        // Fill the form with observation data
+        document.getElementById('date-time').value = observation.datetime;
+        document.getElementById('location').value = observation.location;
+        
+        // Set coordinates display
+        if (observation.coordinates?.wgs84) {
+            document.getElementById('coordinates').innerHTML = `<strong>WGS84:</strong> ${observation.coordinates.wgs84.lat.toFixed(6)}, ${observation.coordinates.wgs84.lng.toFixed(6)} <br> <strong>PSAD56 UTM 17S:</strong> ${observation.coordinates.psad56.easting}E, ${observation.coordinates.psad56.northing}N`;
+            document.getElementById('location-display').classList.add('show');
+        }
+        
+        // Set work front
+        const workFrontValue = observation.workFront;
+        document.getElementById('work-front').value = workFrontValue;
+        
+        // Handle the case for 'otros' value
+        if (workFrontValue === 'otros' || !Object.keys(getWorkFronts()).includes(workFrontValue)) {
+            document.getElementById('selected-work-front').textContent = observation.workFront; // Use the actual value if 'otros' or custom
+            document.getElementById('otros-input-group').style.display = 'block';
+            document.getElementById('otros-input').value = observation.workFront;
+        } else {
+            document.getElementById('selected-work-front').textContent = formatWorkFront(workFrontValue);
+            document.getElementById('otros-input-group').style.display = 'none';
+            document.getElementById('otros-input').value = '';
+        }
+        
+        // Set coronamiento
+        document.getElementById('coronamiento').value = observation.coronamiento;
+        document.getElementById('selected-coronamiento').textContent = formatCoronamiento(observation.coronamiento);
+        
+        // Set tag
+        document.getElementById('tag').value = observation.tag;
+        const { name: tagName } = formatTag(observation.tag);
+        document.getElementById('selected-tag').textContent = tagName;
+        
+        // Update visibility of additional info group if needed
+        document.getElementById('additional-info-group').style.display = workFrontValue === 'drenes_plataforma' ? 'block' : 'none';
+        document.getElementById('additional-info').value = observation.additionalInfo || '';
+        
+        // Set notes
+        document.getElementById('notes').value = observation.notes || '';
+        
+        // Switch to registration tab
+        const navButtons = document.querySelectorAll('.nav-btn');
+        const tabContents = document.querySelectorAll('.tab-content');
+        
+        navButtons.forEach(btn => btn.classList.remove('active'));
+        document.querySelector('[data-tab="registro"]').classList.add('active');
+        
+        tabContents.forEach(content => {
+            content.classList.remove('active');
+            if (content.id === 'registro') {
+                content.classList.add('active');
+            }
+        });
+        
+        // Scroll to form
+        document.querySelector('.form-section').scrollIntoView({ behavior: 'smooth' });
+        
+        // Set the observation ID as a data attribute for update
+        form.setAttribute('data-edit-id', observation.id);
+        saveBtn.innerHTML = '<i class="fas fa-sync-alt"></i> Actualizar Observación';
     }
     
     async function exportData() {
@@ -897,8 +1011,8 @@ document.addEventListener('DOMContentLoaded', function() {
         }).join('');
     }
     
-    function formatWorkFront(workFrontValue) {
-        const fronts = {
+    function getWorkFronts() {
+        return {
             'corona': 'Corona',
             'estribo_izquierdo': 'Estribo Izquierdo',
             'estribo_derecho': 'Estribo Derecho',
@@ -1003,6 +1117,10 @@ document.addEventListener('DOMContentLoaded', function() {
             'p896_cuerpo_principal_sub2': 'P896 Cuerpo principal (C980 Subsec 2)',
             'otros': 'Otros'
         };
+    }
+
+    function formatWorkFront(workFrontValue) {
+        const fronts = getWorkFronts();
         return fronts[workFrontValue] || workFrontValue;
     }
 
@@ -1026,12 +1144,12 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     // --- MAP FUNCTIONALITY ---
-    function loadMap() {
+    async function loadMap() {
         if (!mapInitialized) {
             initializeMap();
             mapInitialized = true;
         }
-        updateMapMarkers();
+        await updateMapMarkers();
     }
     
     function initializeMap() {
@@ -1099,10 +1217,11 @@ document.addEventListener('DOMContentLoaded', function() {
         updateMapMarkers();
     }
     
-    function updateMapMarkers() {
+    async function updateMapMarkers() {
         if (!mapOverlay) return;
         mapOverlay.innerHTML = '';
-        getObservations().forEach(obs => {
+        const observations = await getObservationsDB();
+        observations.forEach(obs => {
             if (obs.coordinates?.psad56?.easting && obs.coordinates?.psad56?.northing) {
                 const { easting, northing } = obs.coordinates.psad56;
                 const imgCoords = psad56ToImage(easting, northing);
