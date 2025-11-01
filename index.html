@@ -428,5 +428,24 @@
             </div>
         </div>
     </div>
+    
+    <!-- Modal para galería de fotos -->
+    <div id="photo-gallery-modal" class="modal">
+        <div class="modal-content" style="max-width: 90vw; max-height: 90vh;">
+            <div class="modal-header">
+                <h3 id="gallery-title">Fotos de la Observación</h3>
+                <span class="close" id="close-gallery-modal">&times;</span>
+            </div>
+            <div class="modal-body">
+                <div id="photo-thumbnails-container" class="photo-thumbnails"></div>
+                <div id="photo-display" class="photo-display">
+                    <img id="displayed-photo" src="" alt="Foto ampliada">
+                    <button id="close-photo-view" class="close-btn">×</button>
+                    <button id="prev-photo" class="nav-btn prev-btn">‹</button>
+                    <button id="next-photo" class="nav-btn next-btn">›</button>
+                </div>
+            </div>
+        </div>
+    </div>
 </body>
 </html>

@@ -359,11 +359,23 @@ html, body {
   display: flex;
   gap: 0.75rem;
   margin-bottom: 1rem;
+  flex-wrap: wrap;
 }
 
 .photo-options .btn {
   flex: 1;
   justify-content: center;
+  min-width: 40%;
+}
+
+@media (max-width: 480px) {
+  .photo-options {
+    flex-direction: column;
+  }
+  
+  .photo-options .btn {
+    min-width: 100%;
+  }
 }
 
 #photo-preview {
@@ -1995,4 +2007,168 @@ html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
     color: red;
     font-size: 2rem;
     text-shadow: 0 0 3px black;
+}
+
+/* Estilos para la galería de fotos */
+.photo-thumbnails {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+    justify-content: center;
+    padding: 1rem;
+    max-height: 200px;
+    overflow-y: auto;
+}
+
+.photo-thumbnails img {
+    width: 60px;
+    height: 60px;
+    object-fit: cover;
+    border-radius: 0.5rem;
+    border: 2px solid transparent;
+    cursor: pointer;
+    transition: var(--transition);
+}
+
+.photo-thumbnails img:hover {
+    border-color: var(--primary);
+    transform: scale(1.05);
+}
+
+.photo-thumbnails img.active {
+    border-color: var(--primary);
+    transform: scale(1.05);
+}
+
+.photo-display {
+    position: relative;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+    height: 400px;
+    overflow: hidden;
+    border-radius: 0.5rem;
+    background-color: rgba(0,0,0,0.1);
+}
+
+.photo-display img {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+}
+
+.close-btn {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: rgba(0,0,0,0.7);
+    color: white;
+    border: none;
+    font-size: 1.5rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10;
+}
+
+.close-btn:hover {
+    background: rgba(255,0,0,0.8);
+}
+
+.nav-btn {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    background: rgba(0,0,0,0.7);
+    color: white;
+    border: none;
+    font-size: 1.5rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10;
+}
+
+.nav-btn:hover {
+    background: rgba(0,0,0,0.9);
+}
+
+.prev-btn {
+    left: 10px;
+}
+
+.next-btn {
+    right: 10px;
+}
+
+/* Ocultar botones de navegación si solo hay una foto */
+.photo-display.single-photo .nav-btn {
+    display: none;
+}
+
+/* Estilos responsivos para la galería de fotos */
+@media (max-width: 768px) {
+    .photo-display {
+        height: 300px;
+    }
+    
+    .photo-thumbnails {
+        max-height: 150px;
+    }
+    
+    .photo-thumbnails img {
+        width: 50px;
+        height: 50px;
+    }
+    
+    .nav-btn {
+        width: 40px;
+        height: 40px;
+        font-size: 1.2rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .photo-display {
+        height: 200px;
+    }
+    
+    .photo-thumbnails {
+        max-height: 120px;
+    }
+    
+    .photo-thumbnails img {
+        width: 40px;
+        height: 40px;
+    }
+    
+    .close-btn {
+        width: 30px;
+        height: 30px;
+        font-size: 1.2rem;
+    }
+    
+    .nav-btn {
+        width: 35px;
+        height: 35px;
+        font-size: 1.1rem;
+    }
+    
+    .prev-btn {
+        left: 5px;
+    }
+    
+    .next-btn {
+        right: 5px;
+    }
 }

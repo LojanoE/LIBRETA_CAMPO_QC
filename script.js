@@ -1288,18 +1288,129 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     function showObservationDetails(observation) {
-        const details = `
-            <h3>${observation.location}</h3>
-            <p><strong>Fecha y Hora:</strong> ${formatDateTime(observation.datetime)}</p>
-            <p><strong>Frente de Trabajo:</strong> ${formatWorkFront(observation.workFront)}</p>
-            <p><strong>Tipo:</strong> <span class="tag-display" style="background-color: ${formatTag(observation.tag).color}">${formatTag(observation.tag).name}</span></p>
-            <p><strong>Coordenadas PSAD56 UTM 17S:</strong> ${observation.coordinates.psad56.easting}E, ${observation.coordinates.psad56.northing}N</p>
-            ${observation.additionalInfo ? `<p><strong>Info Adicional:</strong> ${observation.additionalInfo}</p>` : ''}
-            ${observation.notes ? `<p><strong>Actividades Realizadas:</strong><br>${formatNotesWithBullets(observation.notes).replace(/<div class="bullet-item">/g, '• ').replace(/<\/div>/g, '<br>').replace(/<div class="regular-item">/g, '').replace(/<\/div>/g, '<br>')}</p>` : ''}
-            ${observation.photos?.length > 0 ? `<p><strong>Fotos:</strong> ${observation.photos.length} foto(s)</p>` : ''}
-        `;
-        // This should be a modal, but for now, it's an alert.
-        alert(details.replace(/<[^>]*>/g, ''));
+        // Get the gallery modal elements
+        const galleryModal = document.getElementById('photo-gallery-modal');
+        const galleryTitle = document.getElementById('gallery-title');
+        const thumbnailsContainer = document.getElementById('photo-thumbnails-container');
+        const photoDisplay = document.getElementById('photo-display');
+        const displayedPhoto = document.getElementById('displayed-photo');
+        const closeGalleryBtn = document.getElementById('close-gallery-modal');
+        const closePhotoViewBtn = document.getElementById('close-photo-view');
+        const prevPhotoBtn = document.getElementById('prev-photo');
+        const nextPhotoBtn = document.getElementById('next-photo');
+        
+        // Set the gallery title
+        galleryTitle.textContent = `Fotos de: ${observation.location}`;
+        
+        // Clear previous content
+        thumbnailsContainer.innerHTML = '';
+        displayedPhoto.src = '';
+        
+        // Check if there are photos
+        if (observation.photos && observation.photos.length > 0) {
+            // Create and append thumbnails
+            observation.photos.forEach((photo, index) => {
+                const photoURL = URL.createObjectURL(photo);
+                const thumbnail = document.createElement('img');
+                thumbnail.src = photoURL;
+                thumbnail.alt = `Foto ${index + 1}`;
+                thumbnail.dataset.index = index;
+                thumbnail.classList.add('photo-thumbnail');
+                
+                thumbnail.addEventListener('click', () => {
+                    // Set the displayed photo and activate the thumbnail
+                    displayedPhoto.src = photoURL;
+                    document.querySelectorAll('#photo-thumbnails-container img').forEach(img => {
+                        img.classList.remove('active');
+                    });
+                    thumbnail.classList.add('active');
+                    photoDisplay.classList.remove('single-photo');
+                });
+                
+                // Set the first photo as the default if there's no currently displayed photo
+                if (index === 0 && displayedPhoto.src === '') {
+                    displayedPhoto.src = photoURL;
+                    thumbnail.classList.add('active');
+                    if (observation.photos.length === 1) {
+                        photoDisplay.classList.add('single-photo');
+                    } else {
+                        photoDisplay.classList.remove('single-photo');
+                    }
+                }
+                
+                thumbnailsContainer.appendChild(thumbnail);
+            });
+            
+            // Navigation functionality
+            let currentIndex = 0;
+            
+            function showPhoto(index) {
+                if (index >= 0 && index < observation.photos.length) {
+                    currentIndex = index;
+                    
+                    // Create a new URL for each photo to avoid conflicts
+                    const photoURL = URL.createObjectURL(observation.photos[currentIndex]);
+                    displayedPhoto.src = photoURL;
+                    
+                    // Update active thumbnail
+                    document.querySelectorAll('#photo-thumbnails-container img').forEach(img => {
+                        img.classList.remove('active');
+                    });
+                    document.querySelector(`#photo-thumbnails-container img[data-index="${currentIndex}"]`).classList.add('active');
+                }
+            }
+            
+            prevPhotoBtn.addEventListener('click', () => {
+                let newIndex = currentIndex - 1;
+                if (newIndex < 0) newIndex = observation.photos.length - 1; // Loop to last
+                showPhoto(newIndex);
+            });
+            
+            nextPhotoBtn.addEventListener('click', () => {
+                let newIndex = currentIndex + 1;
+                if (newIndex >= observation.photos.length) newIndex = 0; // Loop to first
+                showPhoto(newIndex);
+            });
+            
+            // Add keyboard navigation
+            document.addEventListener('keydown', (e) => {
+                if (galleryModal.style.display === 'block') {
+                    if (e.key === 'ArrowLeft') {
+                        let newIndex = currentIndex - 1;
+                        if (newIndex < 0) newIndex = observation.photos.length - 1;
+                        showPhoto(newIndex);
+                    } else if (e.key === 'ArrowRight') {
+                        let newIndex = currentIndex + 1;
+                        if (newIndex >= observation.photos.length) newIndex = 0;
+                        showPhoto(newIndex);
+                    } else if (e.key === 'Escape') {
+                        galleryModal.style.display = 'none';
+                    }
+                }
+            });
+        } else {
+            // If no photos, show a message
+            photoDisplay.innerHTML = '<p style="text-align: center; width: 100%; padding: 20px; color: var(--text-secondary);">No hay fotos para esta observación</p>';
+        }
+        
+        // Show the modal
+        galleryModal.style.display = 'block';
+        
+        // Close modal handlers
+        closeGalleryBtn.addEventListener('click', () => {
+            galleryModal.style.display = 'none';
+        });
+        
+        closePhotoViewBtn.addEventListener('click', () => {
+            galleryModal.style.display = 'none';
+        });
+        
+        // Also close if clicking outside the modal content
+        window.addEventListener('click', (event) => {
+            if (event.target === galleryModal) {
+                galleryModal.style.display = 'none';
+            }
+        });
     }
     
     if (mapInitialized) {
