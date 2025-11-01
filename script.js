@@ -40,6 +40,24 @@ document.addEventListener('DOMContentLoaded', function() {
     const photoPreview = document.getElementById('photo-preview');
     const addMorePhotosBtn = document.getElementById('add-more-photos');
     const mainContent = document.getElementById('main-content');
+    
+    // Get references to camera and gallery buttons
+    const cameraBtn = document.getElementById('camera-btn');
+    const galleryBtn = document.getElementById('gallery-btn');
+    
+    // Set the capture attribute to environment (camera) for camera button
+    cameraBtn.addEventListener('click', function() {
+        photoInput.setAttribute('capture', 'environment');
+        photoInput.removeAttribute('multiple'); // Single photo for camera
+        photoInput.click();
+    });
+
+    // Gallery button should allow selection from gallery
+    galleryBtn.addEventListener('click', function() {
+        photoInput.removeAttribute('capture'); // Remove capture attribute to allow gallery
+        photoInput.setAttribute('multiple', 'multiple'); // Allow multiple selections for gallery
+        photoInput.click();
+    });
     const mapModal = document.getElementById('map-modal');
     const placePinBtn = document.getElementById('place-pin-btn');
     const closeMapModalBtn = document.getElementById('close-map-modal');
