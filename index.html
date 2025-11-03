@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Libreta de Campo - QC</title>
-    <link rel="stylesheet" href="styles.css" id="main-styles">
+    <link rel="stylesheet" href="styles_new.css" id="main-styles">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="manifest" href="manifest.json">
 </head>
@@ -28,16 +28,16 @@
         
         <!-- Navegación -->
         <nav class="main-nav">
-            <button class="nav-btn active" data-tab="registro">
+            <button class="nav-btn active" onclick="showTab('registro', this); return false;">
                 <i class="fas fa-plus-circle"></i> Registrar
             </button>
-            <button class="nav-btn" data-tab="observaciones">
+            <button class="nav-btn" onclick="showTab('observaciones', this); return false;">
                 <i class="fas fa-list"></i> Observaciones
             </button>
-            <button class="nav-btn" data-tab="mapa">
+            <button class="nav-btn" onclick="showTab('mapa', this); return false;">
                 <i class="fas fa-map-marked-alt"></i> Mapa
             </button>
-            <button class="nav-btn" data-tab="configuracion">
+            <button class="nav-btn" onclick="showTab('configuracion', this); return false;">
                 <i class="fas fa-cog"></i> Configuración
             </button>
         </nav>
@@ -387,6 +387,51 @@
     </div>
     
     <script src="https://cdnjs.cloudflare.com/ajax/libs/exif-js/2.3.0/exif.min.js"></script>
+    <script>
+        // Función para mostrar pestañas
+        function showTab(tabId, clickedButton) {
+            // Ocultar todas las secciones
+            const allContents = document.querySelectorAll('.tab-content');
+            allContents.forEach(content => {
+                content.style.display = 'none';
+            });
+            
+            // Mostrar la sección seleccionada
+            const selectedContent = document.getElementById(tabId);
+            if (selectedContent) {
+                selectedContent.style.display = 'block';
+            }
+            
+            // Actualizar estado visual de botones
+            const allButtons = document.querySelectorAll('.nav-btn');
+            allButtons.forEach(button => {
+                button.classList.remove('active');
+                button.style.background = '';
+                button.style.color = '';
+            });
+            
+            // Aplicar estilo al botón clickeado
+            clickedButton.classList.add('active');
+            clickedButton.style.background = 'linear-gradient(135deg, var(--primary), var(--primary-dark))';
+            clickedButton.style.color = '#0b1220';
+            
+            // Cargar contenido específico si es necesario
+            if (tabId === 'observaciones' && typeof loadObservations === 'function') {
+                setTimeout(loadObservations, 10);
+            } else if (tabId === 'mapa' && typeof loadMap === 'function') {
+                setTimeout(loadMap, 10);
+            }
+        }
+        
+        // Inicializar la pestaña activa
+        document.addEventListener('DOMContentLoaded', function() {
+            // Asegurar que la pestaña activa por defecto esté visible
+            const activeContent = document.querySelector('.tab-content.active');
+            if (activeContent) {
+                activeContent.style.display = 'block';
+            }
+        });
+    </script>
     <script src="jszip.min.js"></script>
     <script src="db.js"></script>
     <script src="script.js" id="main-script"></script>

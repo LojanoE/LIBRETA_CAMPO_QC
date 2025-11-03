@@ -29,7 +29,7 @@
 
 The application is built as a single-page application with the following main components:
 
-1. **UI Layer** (`index.html`, `styles_new.css`): Responsive user interface with tab navigation
+1. **UI Layer** (`index.html`, `styles.css`): Responsive user interface with tab navigation
 2. **Logic Layer** (`script.js`): Core application functionality
 3. **Data Layer** (`db.js`): IndexedDB wrapper for data persistence
 4. **Service Worker** (`sw.js`): Offline caching and network management
@@ -151,7 +151,9 @@ The application functions fully offline after initial load, with data stored in 
 
 ## Testing
 
-The project includes different versions of tab functionality in separate JS files (`tabs_simple.js`, `tabs_functionality.js`, `tabs_final.js`, `tabs_debug.js`) which appear to be different implementations for debugging and testing UI navigation behavior.
+The project includes basic test files:
+- `test.html`: Tests JSZip functionality
+- `test_coords.html`: Tests coordinate transformation logic
 
 ## Deployment
 
