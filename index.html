@@ -8,6 +8,79 @@
     <link rel="stylesheet" href="styles.css" id="main-styles">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="manifest" href="manifest.json">
+    <style>
+        #photo-gallery-modal .modal-content {
+            max-width: 95vw;
+            max-height: 95vh;
+            height: 90vh;
+        }
+
+        #photo-gallery-content {
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+        }
+
+        .photo-display-container {
+            flex-grow: 1;
+            position: relative;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background-color: #000;
+        }
+
+        #displayed-photo {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+        }
+
+        .thumbnails-container {
+            flex-shrink: 0;
+            display: flex;
+            justify-content: center;
+            padding: 10px;
+            gap: 10px;
+            background-color: rgba(0,0,0,0.1);
+            overflow-x: auto;
+        }
+
+        .photo-thumbnail {
+            width: 80px;
+            height: 80px;
+            object-fit: cover;
+            cursor: pointer;
+            border: 2px solid transparent;
+            border-radius: 5px;
+        }
+
+        .photo-thumbnail.active {
+            border-color: #007bff;
+        }
+
+        .nav-arrow {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            background-color: rgba(0, 0, 0, 0.5);
+            color: white;
+            border: none;
+            font-size: 2rem;
+            cursor: pointer;
+            padding: 10px;
+            z-index: 10;
+            border-radius: 50%;
+        }
+
+        .prev-arrow {
+            left: 10px;
+        }
+
+        .next-arrow {
+            right: 10px;
+        }
+    </style>
 </head>
 <body>
     <div class="container card soft">
@@ -17,7 +90,7 @@
                 <img src="RAC-FOT.jpg" alt="Logo" class="logo">
             </div>
             <div class="header-content">
-                <h1><i class="fas fa-book"></i> Libreta de Campo - QC-V12</h1>
+                <h1><i class="fas fa-book"></i> Libreta de Campo - QC-V15</h1>
                 <p class="note">Registra y almacena tus observaciones de campo localmente</p>
                 <div class="version-info note">
                     Versión: <span id="app-version"></span>
@@ -244,7 +317,15 @@
                         <div class="form-group">
                             <label for="photo"><i class="fas fa-camera"></i> Fotos (opcional):</label>
                             <div class="photo-upload-container">
-                                <input type="file" id="photo" name="photo" accept="image/*" multiple capture="environment" class="form-control">
+                                <input type="file" id="photo" name="photo" accept="image/*" class="hidden-file-input">
+                                <div class="photo-buttons">
+                                    <button type="button" id="camera-btn" class="btn btn-ghost">
+                                        <i class="fas fa-camera"></i> Tomar Foto
+                                    </button>
+                                    <button type="button" id="gallery-btn" class="btn btn-ghost">
+                                        <i class="fas fa-images"></i> Subir de Galería
+                                    </button>
+                                </div>
                                 <div id="photo-preview" class="photo-preview"></div>
                                 <button type="button" id="add-more-photos" class="btn btn-secondary" style="margin-top: 10px; display: none;">
                                     <i class="fas fa-camera"></i> Añadir más fotos
@@ -420,5 +501,43 @@
             </div>
         </div>
     </div>
+    <!-- Modal para detalles de la observación -->
+    <div id="observation-details-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="observation-details-title">Detalles de la Observación</h3>
+                <span class="close" id="close-observation-details-modal">&times;</span>
+            </div>
+            <div class="modal-body" id="observation-details-content">
+                <!-- Observation details will be populated here by JavaScript -->
+            </div>
+            <div class="modal-footer">
+                <button id="open-gallery-btn" class="btn btn-primary">Ver Fotos</button>
+                <button id="close-observation-details-btn" class="btn btn-secondary">Cerrar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal para la galería de fotos -->
+    <div id="photo-gallery-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="gallery-title">Fotos de la Observación</h3>
+                <span class="close" id="close-gallery-modal">&times;</span>
+            </div>
+            <div class="modal-body" id="photo-gallery-content">
+                <div id="photo-display" class="photo-display-container">
+                    <img id="displayed-photo" src="" alt="Foto de la observación">
+                    <button id="prev-photo" class="nav-arrow prev-arrow"><i class="fas fa-chevron-left"></i></button>
+                    <button id="next-photo" class="nav-arrow next-arrow"><i class="fas fa-chevron-right"></i></button>
+                </div>
+                <div id="photo-thumbnails-container" class="thumbnails-container">
+                    <!-- Thumbnails will be added here by JavaScript -->
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button id="close-photo-view" class="btn btn-primary">Cerrar</button>
+            </div>
+        </div>
+    </div>
 </body>
-</html>

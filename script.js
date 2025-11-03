@@ -11,7 +11,8 @@ function updateLastSavedDisplay() {
 }
 
 document.addEventListener('DOMContentLoaded', function() {
-    updateLastSavedDisplay();
+    try {
+        updateLastSavedDisplay();
     
     // DOM elements
     const form = document.getElementById('observationForm');
@@ -40,6 +41,24 @@ document.addEventListener('DOMContentLoaded', function() {
     const photoPreview = document.getElementById('photo-preview');
     const addMorePhotosBtn = document.getElementById('add-more-photos');
     const mainContent = document.getElementById('main-content');
+    
+    // Get references to camera and gallery buttons
+    const cameraBtn = document.getElementById('camera-btn');
+    const galleryBtn = document.getElementById('gallery-btn');
+    
+    // Set the capture attribute to environment (camera) for camera button
+    cameraBtn.addEventListener('click', function() {
+        photoInput.setAttribute('capture', 'environment');
+        photoInput.removeAttribute('multiple'); // Single photo for camera
+        photoInput.click();
+    });
+
+    // Gallery button should allow selection from gallery
+    galleryBtn.addEventListener('click', function() {
+        photoInput.removeAttribute('capture'); // Remove capture attribute to allow gallery
+        photoInput.setAttribute('multiple', 'multiple'); // Allow multiple selections for gallery
+        photoInput.click();
+    });
     const mapModal = document.getElementById('map-modal');
     const placePinBtn = document.getElementById('place-pin-btn');
     const closeMapModalBtn = document.getElementById('close-map-modal');
@@ -246,31 +265,77 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
-    // Tab navigation
-    const navButtons = document.querySelectorAll('.nav-btn');
-    const tabContents = document.querySelectorAll('.tab-content');
-    
-    navButtons.forEach(button => {
-        button.addEventListener('click', function() {
-            const tabId = this.getAttribute('data-tab');
+    // Simple and robust navigation initialization without DOM manipulation
+        const navButtons = document.querySelectorAll('.nav-btn');
+        const tabContents = document.querySelectorAll('.tab-content');
+        
+        console.log('Nav buttons found:', navButtons.length);
+        console.log('Tab contents found:', tabContents.length);
+        
+        if (navButtons.length > 0 && tabContents.length > 0) {
+            console.log('Setting up navigation event listeners...');
             
-            navButtons.forEach(btn => btn.classList.remove('active'));
-            this.classList.add('active');
-            
-            tabContents.forEach(content => {
-                content.classList.remove('active');
-                if (content.id === tabId) {
-                    content.classList.add('active');
+            // Remove any potential duplicate listeners by only attaching once
+            navButtons.forEach(button => {
+                // Store the original click handler to avoid duplicates if this code runs multiple times
+                if (!button.dataset.listenerAttached) {
+                    button.addEventListener('click', function(e) {
+                        e.preventDefault();
+                        
+                        const tabId = this.getAttribute('data-tab');
+                        console.log('Clicked tab:', tabId);
+                        
+                        // Remove active class from all buttons
+                        navButtons.forEach(btn => btn.classList.remove('active'));
+                        
+                        // Add active class to clicked button
+                        this.classList.add('active');
+                        
+                        // Remove active class from all tab contents
+                        tabContents.forEach(content => content.classList.remove('active'));
+                        
+                        // Add active class to target tab content
+                        const targetTab = document.getElementById(tabId);
+                        if (targetTab) {
+                            targetTab.classList.add('active');
+                            console.log('Activated tab:', tabId);
+                            
+                            // Load specific content if needed
+                            if (tabId === 'registro') {
+                                setDateTime();
+                            } else if (tabId === 'observaciones') {
+                                loadObservations().catch(err => console.error('Observations load error:', err));
+                            } else if (tabId === 'mapa') {
+                                loadMap().catch(err => console.error('Map load error:', err));
+                            }
+                        } else {
+                            console.error('Target tab not found:', tabId);
+                        }
+                    });
+                    
+                    // Mark that listener has been attached to avoid duplicates
+                    button.dataset.listenerAttached = 'true';
                 }
             });
             
-            if (tabId === 'observaciones') {
-                loadObservations();
-            } else if (tabId === 'mapa') {
-                loadMap();
+            // Ensure proper initial state
+
+            const activeButton = document.querySelector('.nav-btn.active');
+            const activeContent = document.querySelector('.tab-content.active');
+            
+            if (!activeButton || !activeContent) {
+                const defaultButton = document.querySelector('.nav-btn[data-tab="registro"]');
+                const defaultContent = document.getElementById('registro');
+                
+                if (defaultButton && defaultContent) {
+                    defaultButton.classList.add('active');
+                    defaultContent.classList.add('active');
+                }
             }
-        });
-    });
+        } else {
+            console.error('Navigation elements not found in DOM');
+        }
+    
     
     const notesTextarea = document.getElementById('notes');
     
@@ -287,25 +352,50 @@ document.addEventListener('DOMContentLoaded', function() {
 
     setDateTime();
     
-    workFrontHeader.addEventListener('click', function(e) {
-        e.stopPropagation();
-        toggleDropdown('work-front-dropdown');
-    });
+    // Add click event listeners to dropdown headers with null checks
+    if (workFrontHeader) {
+        workFrontHeader.addEventListener('click', function(e) {
+            e.stopPropagation();
+            toggleDropdown('work-front-dropdown');
+        });
+    }
 
-    tagHeader.addEventListener('click', function(e) {
-        e.stopPropagation();
-        toggleDropdown('tag-dropdown');
-    });
+    if (tagHeader) {
+        tagHeader.addEventListener('click', function(e) {
+            e.stopPropagation();
+            toggleDropdown('tag-dropdown');
+        });
+    }
+
+    if (coronamientoHeader) {
+        coronamientoHeader.addEventListener('click', function(e) {
+            e.stopPropagation();
+            toggleDropdown('coronamiento-dropdown');
+        });
+    }
 
     function toggleDropdown(dropdownId) {
         const dropdown = document.getElementById(dropdownId);
+        if (!dropdown) {
+            console.error(`Dropdown with ID ${dropdownId} not found`);
+            return;
+        }
+        
         const options = dropdown.querySelector('.dropdown-options');
+        if (!options) {
+            console.error(`Options container not found for dropdown ${dropdownId}`);
+            return;
+        }
+        
         const allDropdowns = document.querySelectorAll('.dropdown-card');
         
         allDropdowns.forEach(d => {
             if (d !== dropdown) {
                 d.classList.remove('active');
-                d.querySelector('.dropdown-options').style.display = 'none';
+                const dOptions = d.querySelector('.dropdown-options');
+                if (dOptions) {
+                    dOptions.style.display = 'none';
+                }
             }
         });
         
@@ -323,52 +413,42 @@ document.addEventListener('DOMContentLoaded', function() {
         const dropdowns = document.querySelectorAll('.dropdown-card');
         dropdowns.forEach(dropdown => {
             dropdown.classList.remove('active');
-            dropdown.querySelector('.dropdown-options').style.display = 'none';
+            const options = dropdown.querySelector('.dropdown-options');
+            if (options) {
+                options.style.display = 'none';
+            }
         });
     }
     
-    document.querySelectorAll('.dropdown-option').forEach(option => {
-        option.addEventListener('click', function(e) {
-            e.stopPropagation();
-            const value = this.getAttribute('data-value');
-            let text = this.textContent.trim();
-            if (this.querySelector('.tag-color')) {
-                const tagColor = this.querySelector('.tag-color').outerHTML;
-                text = this.innerHTML.replace(tagColor, '').replace(/<i[^>]*>.*?<\/i>/g, '').trim();
-            }
-            
-            const dropdown = this.closest('.dropdown-card');
-            const hiddenInput = dropdown.querySelector('input[type="hidden"]');
-            const selectedDisplay = dropdown.querySelector('.dropdown-header span:first-child');
+    // Check if there are dropdown options before adding event listeners
+    const allDropdownOptions = document.querySelectorAll('.dropdown-option');
+    if (allDropdownOptions.length > 0) {
+        allDropdownOptions.forEach(option => {
+            option.addEventListener('click', function(e) {
+                e.stopPropagation();
+                const value = this.getAttribute('data-value');
+                let text = this.textContent.trim();
+                if (this.querySelector('.tag-color')) {
+                    const tagColor = this.querySelector('.tag-color').outerHTML;
+                    text = this.innerHTML.replace(tagColor, '').replace(/<i[^>]*>.*?<\/i>/g, '').trim();
+                }
+                
+                const dropdown = this.closest('.dropdown-card');
+                const hiddenInput = dropdown.querySelector('input[type="hidden"]');
+                const selectedDisplay = dropdown.querySelector('.dropdown-header span:first-child');
 
-            hiddenInput.value = value;
-            selectedDisplay.innerHTML = text;
+                hiddenInput.value = value;
+                selectedDisplay.innerHTML = text;
 
-            closeAllDropdowns();
+                closeAllDropdowns();
 
-            if (hiddenInput.id === 'work-front') {
-                hiddenInput.dispatchEvent(new Event('change'));
-            }
+                if (hiddenInput.id === 'work-front') {
+                    hiddenInput.dispatchEvent(new Event('change'));
+                }
+            });
         });
-    });
-    
-    // Coronamiento dropdown functionality
-    coronamientoHeader.addEventListener('click', function(e) {
-        e.stopPropagation();
-        toggleDropdown('coronamiento-dropdown');
-    });
+    }
 
-    document.querySelectorAll('#coronamiento-options .dropdown-option').forEach(option => {
-        option.addEventListener('click', function(e) {
-            e.stopPropagation();
-            const value = this.getAttribute('data-value');
-            const text = this.textContent.trim();
-            
-            coronamientoSelect.value = value;
-            selectedCoronamiento.textContent = text;
-            closeAllDropdowns();
-        });
-    });
     
     // Get reference to the "otros" input field and its container
     const otrosInputGroup = document.getElementById('otros-input-group');
@@ -390,21 +470,43 @@ document.addEventListener('DOMContentLoaded', function() {
     });
     
     // Add search functionality for work front options
-    workFrontSearch.addEventListener('input', function() {
-        const searchTerm = this.value.toLowerCase();
-        const options = workFrontOptionsContainer.querySelectorAll('.dropdown-option');
-        
-        options.forEach(option => {
-            const text = option.textContent.toLowerCase();
-            const value = option.getAttribute('data-value').toLowerCase();
+    if (workFrontSearch && workFrontOptionsContainer) {
+        workFrontSearch.addEventListener('input', function(e) {
+            e.stopPropagation(); // Prevent event propagation to parent dropdown
+            const searchTerm = this.value.toLowerCase();
+            const options = workFrontOptionsContainer.querySelectorAll('.dropdown-option');
             
-            if (text.includes(searchTerm) || value.includes(searchTerm)) {
-                option.style.display = 'block';
-            } else {
-                option.style.display = 'none';
-            }
+            options.forEach(option => {
+                const text = option.textContent.toLowerCase();
+                const value = option.getAttribute('data-value').toLowerCase();
+                
+                if (text.includes(searchTerm) || value.includes(searchTerm)) {
+                    option.style.display = 'block';
+                } else {
+                    option.style.display = 'none';
+                }
+            });
         });
-    });
+        
+        // Add event listener to search container to prevent dropdown close
+        const searchContainer = workFrontOptionsContainer.querySelector('.search-container');
+        if (searchContainer) {
+            searchContainer.addEventListener('click', function(e) {
+                e.stopPropagation();
+            });
+            
+            // Also add focus event to ensure dropdown stays open when search is focused
+            workFrontSearch.addEventListener('focus', function(e) {
+                e.stopPropagation();
+                // Ensure the dropdown remains open when search is focused
+                const dropdown = workFrontOptionsContainer.closest('.dropdown-card');
+                if (dropdown && !dropdown.classList.contains('active')) {
+                    dropdown.classList.add('active');
+                    workFrontOptionsContainer.style.display = 'block';
+                }
+            });
+        }
+    }
     
     if (workFrontSelect.value === 'drenes_plataforma') {
         additionalInfoGroup.style.display = 'block';
@@ -500,9 +602,11 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Funcionalidad para el botón de añadir más fotos
     addMorePhotosBtn.addEventListener('click', function() {
-        // Limpiar el input de archivos para permitir volver a seleccionar los mismos archivos si es necesario
+        // Configurar para abrir la galería y permitir selección múltiple
+        photoInput.removeAttribute('capture');
+        photoInput.setAttribute('multiple', 'multiple');
         photoInput.value = '';
-        // Simular click en el input para seleccionar más fotos
+        // Simular clic en el input para seleccionar más fotos
         photoInput.click();
     });
     
@@ -621,7 +725,14 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
     
-    loadObservations();
+    // Load observations safely with error handling to prevent blocking other functionality
+    // Wrap in setTimeout to ensure it doesn't block the navigation setup
+    setTimeout(() => {
+        loadObservations().catch(error => {
+            console.error('Error loading observations:', error);
+            // Continue with other initialization even if this fails
+        });
+    }, 0);
     
     form.addEventListener('submit', async function(e) {
         e.preventDefault();
@@ -639,8 +750,17 @@ document.addEventListener('DOMContentLoaded', function() {
             workFrontValue = 'Otros';
         }
 
+        // Check if we're editing an existing observation
+        const editId = form.getAttribute('data-edit-id');
+        let id;
+        if (editId) {
+            id = parseInt(editId);
+        } else {
+            id = Date.now(); // Create new ID for new observations
+        }
+
         const formData = {
-            id: Date.now(),
+            id: id,
             datetime: document.getElementById('date-time').value,
             location: document.getElementById('location').value,
             coordinates: {
@@ -659,6 +779,11 @@ document.addEventListener('DOMContentLoaded', function() {
         };
         
         await saveObservationDB(formData);
+        
+        // Reset form to clear edit mode
+        form.removeAttribute('data-edit-id');
+        saveBtn.innerHTML = '<i class="fas fa-save"></i> Guardar Observación';
+        
         form.reset();
         setDateTime();
         locationDisplay.classList.remove('show');
@@ -673,8 +798,16 @@ document.addEventListener('DOMContentLoaded', function() {
         selectedPhotoFiles = [];
         updatePhotoPreview();
 
-        showMessage('¡Observación guardada exitosamente!');
+        if (editId) {
+            showMessage('¡Observación actualizada exitosamente!');
+        } else {
+            showMessage('¡Observación guardada exitosamente!');
+        }
         loadObservations();
+        // Refresh the map to show updated markers
+        if (document.querySelector('.nav-btn[data-tab="mapa"].active')) {
+            loadMap();
+        }
     });
     
     exportBtn.addEventListener('click', exportData);
@@ -683,6 +816,10 @@ document.addEventListener('DOMContentLoaded', function() {
         if (confirm('¿Está seguro de que desea eliminar todas las observaciones? Esta acción no se puede deshacer.')) {
             await clearAllObservationsDB();
             loadObservations();
+            // Refresh the map to remove all markers
+            if (document.querySelector('.nav-btn[data-tab="mapa"].active')) {
+                loadMap();
+            }
             showMessage('Todas las observaciones han sido eliminadas');
         }
     });
@@ -742,6 +879,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     ${observation.notes ? `<div class="observation-detail full-width"><strong>Actividades Realizadas:</strong><div class="notes-content">${formatNotesWithBullets(observation.notes)}</div></div>` : ''}
                     ${photosHTML}
                 </div>
+                <button class="edit-btn" data-id="${observation.id}">Editar</button>
                 <button class="delete-btn" data-id="${observation.id}">Eliminar</button>
                 ${downloadBtnsHTML}
             `;
@@ -751,6 +889,12 @@ document.addEventListener('DOMContentLoaded', function() {
         document.querySelectorAll('.delete-btn').forEach(button => {
             button.addEventListener('click', function() {
                 deleteObservation(parseInt(this.getAttribute('data-id')));
+            });
+        });
+
+        document.querySelectorAll('.edit-btn').forEach(button => {
+            button.addEventListener('click', function() {
+                editObservation(parseInt(this.getAttribute('data-id')));
             });
         });
 
@@ -770,12 +914,93 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             });
         });
+        
+        // Refresh the map to show updated markers if map tab is active
+        if (document.querySelector('.nav-btn[data-tab="mapa"].active')) {
+            loadMap();
+        }
     }
     
     async function deleteObservation(id) {
         await deleteObservationDB(id);
         loadObservations();
+        // Refresh the map to remove deleted marker
+        if (document.querySelector('.nav-btn[data-tab="mapa"].active')) {
+            loadMap();
+        }
         showMessage('Observación eliminada');
+    }
+    
+    async function editObservation(id) {
+        const observations = await getObservationsDB();
+        const observation = observations.find(obs => obs.id === id);
+        
+        if (!observation) {
+            showMessage('Observación no encontrada');
+            return;
+        }
+
+        // Fill the form with observation data
+        document.getElementById('date-time').value = observation.datetime;
+        document.getElementById('location').value = observation.location;
+        
+        // Set coordinates display
+        if (observation.coordinates?.wgs84) {
+            document.getElementById('coordinates').innerHTML = `<strong>WGS84:</strong> ${observation.coordinates.wgs84.lat.toFixed(6)}, ${observation.coordinates.wgs84.lng.toFixed(6)} <br> <strong>PSAD56 UTM 17S:</strong> ${observation.coordinates.psad56.easting}E, ${observation.coordinates.psad56.northing}N`;
+            document.getElementById('location-display').classList.add('show');
+        }
+        
+        // Set work front
+        const workFrontValue = observation.workFront;
+        document.getElementById('work-front').value = workFrontValue;
+        
+        // Handle the case for 'otros' value
+        if (workFrontValue === 'otros' || !Object.keys(getWorkFronts()).includes(workFrontValue)) {
+            document.getElementById('selected-work-front').textContent = observation.workFront; // Use the actual value if 'otros' or custom
+            document.getElementById('otros-input-group').style.display = 'block';
+            document.getElementById('otros-input').value = observation.workFront;
+        } else {
+            document.getElementById('selected-work-front').textContent = formatWorkFront(workFrontValue);
+            document.getElementById('otros-input-group').style.display = 'none';
+            document.getElementById('otros-input').value = '';
+        }
+        
+        // Set coronamiento
+        document.getElementById('coronamiento').value = observation.coronamiento;
+        document.getElementById('selected-coronamiento').textContent = formatCoronamiento(observation.coronamiento);
+        
+        // Set tag
+        document.getElementById('tag').value = observation.tag;
+        const { name: tagName } = formatTag(observation.tag);
+        document.getElementById('selected-tag').textContent = tagName;
+        
+        // Update visibility of additional info group if needed
+        document.getElementById('additional-info-group').style.display = workFrontValue === 'drenes_plataforma' ? 'block' : 'none';
+        document.getElementById('additional-info').value = observation.additionalInfo || '';
+        
+        // Set notes
+        document.getElementById('notes').value = observation.notes || '';
+        
+        // Switch to registration tab
+        const navButtons = document.querySelectorAll('.nav-btn');
+        const tabContents = document.querySelectorAll('.tab-content');
+        
+        navButtons.forEach(btn => btn.classList.remove('active'));
+        document.querySelector('[data-tab="registro"]').classList.add('active');
+        
+        tabContents.forEach(content => {
+            content.classList.remove('active');
+            if (content.id === 'registro') {
+                content.classList.add('active');
+            }
+        });
+        
+        // Scroll to form
+        document.querySelector('.form-section').scrollIntoView({ behavior: 'smooth' });
+        
+        // Set the observation ID as a data attribute for update
+        form.setAttribute('data-edit-id', observation.id);
+        saveBtn.innerHTML = '<i class="fas fa-sync-alt"></i> Actualizar Observación';
     }
     
     async function exportData() {
@@ -897,8 +1122,8 @@ document.addEventListener('DOMContentLoaded', function() {
         }).join('');
     }
     
-    function formatWorkFront(workFrontValue) {
-        const fronts = {
+    function getWorkFronts() {
+        return {
             'corona': 'Corona',
             'estribo_izquierdo': 'Estribo Izquierdo',
             'estribo_derecho': 'Estribo Derecho',
@@ -1003,6 +1228,10 @@ document.addEventListener('DOMContentLoaded', function() {
             'p896_cuerpo_principal_sub2': 'P896 Cuerpo principal (C980 Subsec 2)',
             'otros': 'Otros'
         };
+    }
+
+    function formatWorkFront(workFrontValue) {
+        const fronts = getWorkFronts();
         return fronts[workFrontValue] || workFrontValue;
     }
 
@@ -1026,12 +1255,12 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     // --- MAP FUNCTIONALITY ---
-    function loadMap() {
+    async function loadMap() {
         if (!mapInitialized) {
             initializeMap();
             mapInitialized = true;
         }
-        updateMapMarkers();
+        await updateMapMarkers();
     }
     
     function initializeMap() {
@@ -1099,10 +1328,11 @@ document.addEventListener('DOMContentLoaded', function() {
         updateMapMarkers();
     }
     
-    function updateMapMarkers() {
+    async function updateMapMarkers() {
         if (!mapOverlay) return;
         mapOverlay.innerHTML = '';
-        getObservations().forEach(obs => {
+        const observations = await getObservationsDB();
+        observations.forEach(obs => {
             if (obs.coordinates?.psad56?.easting && obs.coordinates?.psad56?.northing) {
                 const { easting, northing } = obs.coordinates.psad56;
                 const imgCoords = psad56ToImage(easting, northing);
@@ -1151,22 +1381,153 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     function showObservationDetails(observation) {
-        const details = `
-            <h3>${observation.location}</h3>
-            <p><strong>Fecha y Hora:</strong> ${formatDateTime(observation.datetime)}</p>
-            <p><strong>Frente de Trabajo:</strong> ${formatWorkFront(observation.workFront)}</p>
-            <p><strong>Tipo:</strong> <span class="tag-display" style="background-color: ${formatTag(observation.tag).color}">${formatTag(observation.tag).name}</span></p>
-            <p><strong>Coordenadas PSAD56 UTM 17S:</strong> ${observation.coordinates.psad56.easting}E, ${observation.coordinates.psad56.northing}N</p>
-            ${observation.additionalInfo ? `<p><strong>Info Adicional:</strong> ${observation.additionalInfo}</p>` : ''}
-            ${observation.notes ? `<p><strong>Actividades Realizadas:</strong><br>${formatNotesWithBullets(observation.notes).replace(/<div class="bullet-item">/g, '• ').replace(/<\/div>/g, '<br>').replace(/<div class="regular-item">/g, '').replace(/<\/div>/g, '<br>')}</p>` : ''}
-            ${observation.photos?.length > 0 ? `<p><strong>Fotos:</strong> ${observation.photos.length} foto(s)</p>` : ''}
-        `;
-        // This should be a modal, but for now, it's an alert.
-        alert(details.replace(/<[^>]*>/g, ''));
+    const detailsModal = document.getElementById('observation-details-modal');
+    const detailsContent = document.getElementById('observation-details-content');
+    const detailsTitle = document.getElementById('observation-details-title');
+    const openGalleryBtn = document.getElementById('open-gallery-btn');
+    const closeDetailsBtn = document.getElementById('close-observation-details-btn');
+    const closeDetailsModal = document.getElementById('close-observation-details-modal');
+
+    detailsTitle.textContent = `Detalles de: ${observation.location}`;
+
+    const { name: tagName, color: tagColor } = formatTag(observation.tag);
+
+    detailsContent.innerHTML = `
+        <div class="observation-card-modal">
+            <div class="observation-details">
+                <div class="observation-detail"><strong>Fecha y Hora:</strong> ${formatDateTime(observation.datetime)}</div>
+                <div class="observation-detail"><strong>Frente de Trabajo:</strong> ${formatWorkFront(observation.workFront)}</div>
+                <div class="observation-detail"><strong>Tipo:</strong> <span class="tag-display" style="background-color: ${tagColor}">${tagName}</span></div>
+                ${observation.coordinates?.wgs84 ? `<div class="observation-detail"><strong>Coordenadas WGS84:</strong> ${observation.coordinates.wgs84.lat.toFixed(6)}, ${observation.coordinates.wgs84.lng.toFixed(6)}</div>` : ''}
+                ${observation.coordinates?.psad56 ? `<div class="observation-detail"><strong>PSAD56 UTM 17S:</strong> ${observation.coordinates.psad56.easting}E, ${observation.coordinates.psad56.northing}N</div>` : ''}
+                ${observation.additionalInfo ? `<div class="observation-detail"><strong>Info Adicional:</strong> ${observation.additionalInfo}</div>` : ''}
+                ${observation.notes ? `<div class="observation-detail full-width"><strong>Actividades Realizadas:</strong><div class="notes-content">${formatNotesWithBullets(observation.notes)}</div></div>` : ''}
+            </div>
+        </div>
+    `;
+
+    if (observation.photos && observation.photos.length > 0) {
+        openGalleryBtn.style.display = 'block';
+        openGalleryBtn.onclick = () => showPhotoGallery(observation);
+    } else {
+        openGalleryBtn.style.display = 'none';
     }
+
+    detailsModal.style.display = 'block';
+
+    closeDetailsBtn.onclick = () => {
+        detailsModal.style.display = 'none';
+    };
+
+    closeDetailsModal.onclick = () => {
+        detailsModal.style.display = 'none';
+    };
+
+    window.addEventListener('click', (event) => {
+        if (event.target == detailsModal) {
+            detailsModal.style.display = 'none';
+        }
+    });
+}
+
+function showPhotoGallery(observation) {
+    const galleryModal = document.getElementById('photo-gallery-modal');
+    const galleryTitle = document.getElementById('gallery-title');
+    const thumbnailsContainer = document.getElementById('photo-thumbnails-container');
+    const photoDisplay = document.getElementById('photo-display');
+    const displayedPhoto = document.getElementById('displayed-photo');
+    const closeGalleryBtn = document.getElementById('close-gallery-modal');
+    const closePhotoViewBtn = document.getElementById('close-photo-view');
+    const prevPhotoBtn = document.getElementById('prev-photo');
+    const nextPhotoBtn = document.getElementById('next-photo');
+
+    galleryTitle.textContent = `Fotos de: ${observation.location}`;
+    thumbnailsContainer.innerHTML = '';
+    displayedPhoto.src = '';
+
+    let photoURLs = [];
+
+    if (observation.photos && observation.photos.length > 0) {
+        photoDisplay.style.display = 'block';
+        
+        observation.photos.forEach((photo, index) => {
+            const photoURL = URL.createObjectURL(photo);
+            photoURLs.push(photoURL);
+            const thumbnail = document.createElement('img');
+            thumbnail.src = photoURL;
+            thumbnail.alt = `Foto ${index + 1}`;
+            thumbnail.dataset.index = index;
+            thumbnail.classList.add('photo-thumbnail');
+            
+            thumbnail.addEventListener('click', () => {
+                displayedPhoto.src = photoURL;
+                document.querySelectorAll('#photo-thumbnails-container img').forEach(img => {
+                    img.classList.remove('active');
+                });
+                thumbnail.classList.add('active');
+            });
+            
+            if (index === 0) {
+                displayedPhoto.src = photoURL;
+                thumbnail.classList.add('active');
+            }
+            
+            thumbnailsContainer.appendChild(thumbnail);
+        });
+
+        let currentIndex = 0;
+
+        function showPhoto(index) {
+            if (index >= 0 && index < observation.photos.length) {
+                currentIndex = index;
+                displayedPhoto.src = photoURLs[currentIndex];
+                document.querySelectorAll('#photo-thumbnails-container img').forEach(img => {
+                    img.classList.remove('active');
+                });
+                document.querySelector(`#photo-thumbnails-container img[data-index="${currentIndex}"]`).classList.add('active');
+            }
+        }
+
+        prevPhotoBtn.onclick = () => {
+            let newIndex = currentIndex - 1;
+            if (newIndex < 0) newIndex = observation.photos.length - 1;
+            showPhoto(newIndex);
+        };
+
+        nextPhotoBtn.onclick = () => {
+            let newIndex = currentIndex + 1;
+            if (newIndex >= observation.photos.length) newIndex = 0;
+            showPhoto(newIndex);
+        };
+
+    } else {
+        photoDisplay.style.display = 'none';
+        thumbnailsContainer.innerHTML = '<p>No hay fotos para esta observación.</p>';
+    }
+
+    galleryModal.style.display = 'block';
+
+    const closeGallery = () => {
+        galleryModal.style.display = 'none';
+        // Revoke URLs to free up memory
+        photoURLs.forEach(url => URL.revokeObjectURL(url));
+    };
+
+    closeGalleryBtn.onclick = closeGallery;
+    closePhotoViewBtn.onclick = closeGallery;
+
+    window.addEventListener('click', (event) => {
+        if (event.target == galleryModal) {
+            closeGallery();
+        }
+    });
+}
     
     if (mapInitialized) {
         updateMapMarkers();
+    }
+    } catch (error) {
+        console.error('Error in DOMContentLoaded:', error);
     }
 });
 
