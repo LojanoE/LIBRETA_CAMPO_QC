@@ -11,7 +11,8 @@ function updateLastSavedDisplay() {
 }
 
 document.addEventListener('DOMContentLoaded', function() {
-    updateLastSavedDisplay();
+    try {
+        updateLastSavedDisplay();
     
     // DOM elements
     const form = document.getElementById('observationForm');
@@ -264,31 +265,77 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
-    // Tab navigation
-    const navButtons = document.querySelectorAll('.nav-btn');
-    const tabContents = document.querySelectorAll('.tab-content');
-    
-    navButtons.forEach(button => {
-        button.addEventListener('click', function() {
-            const tabId = this.getAttribute('data-tab');
+    // Simple and robust navigation initialization without DOM manipulation
+    try {
+        const navButtons = document.querySelectorAll('.nav-btn');
+        const tabContents = document.querySelectorAll('.tab-content');
+        
+        console.log('Nav buttons found:', navButtons.length);
+        console.log('Tab contents found:', tabContents.length);
+        
+        if (navButtons.length > 0 && tabContents.length > 0) {
+            console.log('Setting up navigation event listeners...');
             
-            navButtons.forEach(btn => btn.classList.remove('active'));
-            this.classList.add('active');
-            
-            tabContents.forEach(content => {
-                content.classList.remove('active');
-                if (content.id === tabId) {
-                    content.classList.add('active');
+            // Remove any potential duplicate listeners by only attaching once
+            navButtons.forEach(button => {
+                // Store the original click handler to avoid duplicates if this code runs multiple times
+                if (!button.dataset.listenerAttached) {
+                    button.addEventListener('click', function(e) {
+                        e.preventDefault();
+                        
+                        const tabId = this.getAttribute('data-tab');
+                        console.log('Clicked tab:', tabId);
+                        
+                        // Remove active class from all buttons
+                        navButtons.forEach(btn => btn.classList.remove('active'));
+                        
+                        // Add active class to clicked button
+                        this.classList.add('active');
+                        
+                        // Remove active class from all tab contents
+                        tabContents.forEach(content => content.classList.remove('active'));
+                        
+                        // Add active class to target tab content
+                        const targetTab = document.getElementById(tabId);
+                        if (targetTab) {
+                            targetTab.classList.add('active');
+                            console.log('Activated tab:', tabId);
+                            
+                            // Load specific content if needed
+                            if (tabId === 'observaciones') {
+                                loadObservations().catch(err => console.error('Observations load error:', err));
+                            } else if (tabId === 'mapa') {
+                                loadMap().catch(err => console.error('Map load error:', err));
+                            }
+                        } else {
+                            console.error('Target tab not found:', tabId);
+                        }
+                    });
+                    
+                    // Mark that listener has been attached to avoid duplicates
+                    button.dataset.listenerAttached = 'true';
                 }
             });
             
-            if (tabId === 'observaciones') {
-                loadObservations();
-            } else if (tabId === 'mapa') {
-                loadMap();
+            // Ensure proper initial state
+            const activeButton = document.querySelector('.nav-btn.active');
+            const activeContent = document.querySelector('.tab-content.active');
+            
+            if (!activeButton || !activeContent) {
+                const defaultButton = document.querySelector('.nav-btn[data-tab="registro"]');
+                const defaultContent = document.getElementById('registro');
+                
+                if (defaultButton && defaultContent) {
+                    defaultButton.classList.add('active');
+                    defaultContent.classList.add('active');
+                }
             }
-        });
-    });
+        } else {
+            console.error('Navigation elements not found in DOM');
+        }
+    } catch (error) {
+        console.error('Error in navigation setup:', error);
+    }
     
     const notesTextarea = document.getElementById('notes');
     
@@ -639,7 +686,14 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
     
-    loadObservations();
+    // Load observations safely with error handling to prevent blocking other functionality
+    // Wrap in setTimeout to ensure it doesn't block the navigation setup
+    setTimeout(() => {
+        loadObservations().catch(error => {
+            console.error('Error loading observations:', error);
+            // Continue with other initialization even if this fails
+        });
+    }, 0);
     
     form.addEventListener('submit', async function(e) {
         e.preventDefault();
@@ -1415,6 +1469,9 @@ document.addEventListener('DOMContentLoaded', function() {
     
     if (mapInitialized) {
         updateMapMarkers();
+    }
+    } catch (error) {
+        console.error('Error in DOMContentLoaded:', error);
     }
 });
 
