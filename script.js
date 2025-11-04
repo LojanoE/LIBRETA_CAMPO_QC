@@ -252,7 +252,7 @@ document.addEventListener('DOMContentLoaded', function() {
     confirmLocationBtn.addEventListener('click', () => {
         if (selectedPinCoords) {
             locationInput.value = `PSAD56: ${selectedPinCoords.x.toFixed(3)}, ${selectedPinCoords.y.toFixed(3)}`;
-            coordinatesSpan.innerHTML = `<strong>PSAD56 UTM 17S:</strong> ${Math.round(selectedPinCoords.x)}E, ${Math.round(selectedPinCoords.y)}N`;
+            coordinatesSpan.innerHTML = `<strong>PSAD56 UTM 17S:</strong> ${selectedPinCoords.x.toFixed(3)}E, ${selectedPinCoords.y.toFixed(3)}N`;
             locationDisplay.classList.add('show');
             showMessage('Ubicación seleccionada desde el mapa.');
             mapModal.style.display = 'none';
@@ -638,10 +638,10 @@ function convert_coords(lat, lon) {
     
     function extractPSAD56Coords(displayStr) {
         if (!displayStr) return null;
-        const eastingMatch = displayStr.match(/(\d+)E/);
-        const northingMatch = displayStr.match(/(\d+)N/);
+        const eastingMatch = displayStr.match(/(\d+\.?\d*)E/);
+        const northingMatch = displayStr.match(/(\d+\.?\d*)N/);
         if (eastingMatch && northingMatch) {
-            return { easting: parseInt(eastingMatch[1]), northing: parseInt(northingMatch[1]), zone: '17S' };
+            return { easting: parseFloat(eastingMatch[1]), northing: parseFloat(northingMatch[1]), zone: '17S' };
         }
         return null;
     }
@@ -946,6 +946,19 @@ function convert_coords(lat, lon) {
         
         // Set notes
         document.getElementById('notes').value = observation.notes || '';
+
+        // Handle existing photos
+        if (observation.photos && observation.photoFileNames) {
+            selectedPhotoFiles = observation.photos.map((photo, index) => ({
+                file: photo,
+                name: observation.photoFileNames[index],
+                metadata: observation.photoMetadata ? observation.photoMetadata[index] : {}
+            }));
+            updatePhotoPreview();
+        } else {
+            selectedPhotoFiles = [];
+            updatePhotoPreview();
+        }
         
         // Switch to registration tab
         const navButtons = document.querySelectorAll('.nav-btn');
