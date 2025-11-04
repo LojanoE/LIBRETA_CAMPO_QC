@@ -671,7 +671,7 @@ function convert_coords(lat, lon) {
                     getLocationBtn.innerHTML = '<i class="fas fa-location-crosshairs"></i> GPS';
                     getLocationBtn.disabled = false;
                 },
-                { enableHighAccuracy: true, timeout: 20000, maximumAge: 0 }
+                { enableHighAccuracy: true, timeout: 30000, maximumAge: 60000 }
             );
         } else {
             showMessage('La geolocalización no es soportada por este navegador.');

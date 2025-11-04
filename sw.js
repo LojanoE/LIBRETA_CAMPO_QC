@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'v17';
+const CACHE_VERSION = 'v18';
 const CACHE_NAME = `libreta-campo-qc-cache-${CACHE_VERSION}`;
 const APP_SHELL_URLS = [
   './',
