@@ -543,9 +543,9 @@ document.addEventListener('DOMContentLoaded', function() {
                     if (metadata.GPSLatitude && metadata.GPSLongitude) {
                         const lat = convertDMSToDD(metadata.GPSLatitude, metadata.GPSLatitudeRef);
                         const lon = convertDMSToDD(metadata.GPSLongitude, metadata.GPSLongitudeRef);
-                        const psad56Coords = convertToPSAD56(lat, lon);
+                        const utmCoords = convert_coords(lat, lon);
                         locationInput.value = `WGS84: ${lat.toFixed(6)}, ${lon.toFixed(6)}`;
-                        coordinatesSpan.innerHTML = `<strong>WGS84:</strong> ${lat.toFixed(6)}, ${lon.toFixed(6)} <br> <strong>PSAD56 UTM 17S:</strong> ${psad56Coords.utmEasting}E, ${psad56Coords.utmNorthing}N`;
+                        coordinatesSpan.innerHTML = `<strong>WGS84:</strong> ${lat.toFixed(6)}, ${lon.toFixed(6)} <br> <strong>PSAD56 UTM 17S:</strong> ${utmCoords.easting.toFixed(3)}E, ${utmCoords.northing.toFixed(3)}N`;
                         locationDisplay.classList.add('show');
                         showMessage('Metadatos de ubicación extraídos de la foto.');
                     }
@@ -610,52 +610,18 @@ document.addEventListener('DOMContentLoaded', function() {
         photoInput.click();
     });
     
-    function convertToPSAD56(lat, lng) {
-        const latOffset = 0.0027;
-        const lngOffset = -0.0015;
-        const psad56Lat = lat - latOffset;
-        const psad56Lng = lng - lngOffset;
-        const utmResult = convertToUTM(psad56Lat, psad56Lng, 17);
-        return {
-            lat: psad56Lat,
-            lng: psad56Lng,
-            utmEasting: utmResult.easting,
-            utmNorthing: utmResult.northing,
-            utmZone: utmResult.zone
-        };
-    }
-    
-    function convertToUTM(lat, lng, zoneNumber) {
-        const K0 = 0.9996;
-        const E = 0.00669438;
-        const E2 = E * E;
-        const E_P2 = E / (1 - E);
-        const a = 6378137.0;
-        const isSouthern = lat < 0;
-        
-        const latRad = lat * Math.PI / 180;
-        const lngRad = lng * Math.PI / 180;
-        const lngOriginRad = ((Math.abs(zoneNumber) - 1) * 6 - 180 + 3) * Math.PI / 180;
-        
-        const N = a / Math.sqrt(1 - E * Math.pow(Math.sin(latRad), 2));
-        const T = Math.pow(Math.tan(latRad), 2);
-        const C = E_P2 * Math.pow(Math.cos(latRad), 2);
-        const A = Math.cos(latRad) * (lngRad - lngOriginRad);
-        
-        const M = a * ((1 - E / 4 - 3 * E2 / 64 - 5 * (E2*E) / 256) * latRad - (3 * E / 8 + 3 * E2 / 32 + 45 * (E2*E) / 1024) * Math.sin(2 * latRad) + (15 * E2 / 256 + 45 * (E2*E) / 1024) * Math.sin(4 * latRad) - (35 * (E2*E) / 3072) * Math.sin(6 * latRad));
-        
-        const utmEasting = K0 * N * (A + (1 - T + C) * Math.pow(A, 3) / 6 + (5 - 18 * T + T * T + 72 * C - 58 * E_P2) * Math.pow(A, 5) / 120) + 500000;
-        let utmNorthing = K0 * (M + N * Math.tan(latRad) * (Math.pow(A, 2) / 2 + (5 - T + 9 * C + 4 * C * C) * Math.pow(A, 4) / 24 + (61 - 58 * T + T * T + 600 * C - 330 * E_P2) * Math.pow(A, 6) / 720));
-        
-        if (isSouthern) {
-            utmNorthing += 10000000;
-        }
-        return {
-            easting: Math.round(utmEasting),
-            northing: Math.round(utmNorthing),
-            zone: Math.abs(zoneNumber) + (isSouthern ? 'S' : 'N')
-        };
-    }
+    // Definir los sistemas de coordenadas
+proj4.defs("EPSG:4326", "+proj=longlat +datum=WGS84 +no_defs");
+proj4.defs("EPSG:24877", "+proj=utm +zone=17 +south +ellps=intl +datum=PSAD56 +units=m +no_defs +towgs84=-288,175,-376,0,0,0,0");
+
+function convert_coords(lat, lon) {
+    // Transformar las coordenadas
+    var coords = proj4("EPSG:4326", "EPSG:24877", [lon, lat]);
+    return {
+        easting: coords[0],
+        northing: coords[1]
+    };
+}
     
     function extractWGS84Coords(locationStr) {
         if (!locationStr) return null;
@@ -687,9 +653,9 @@ document.addEventListener('DOMContentLoaded', function() {
             navigator.geolocation.getCurrentPosition(
                 function(position) {
                     const { latitude: lat, longitude: lng, accuracy } = position.coords;
-                    const psad56Coords = convertToPSAD56(lat, lng);
+                    const utmCoords = convert_coords(lat, lng);
                     locationInput.value = `WGS84: ${lat.toFixed(6)}, ${lng.toFixed(6)}`;
-                    coordinatesSpan.innerHTML = `<strong>WGS84:</strong> ${lat.toFixed(6)}, ${lng.toFixed(6)} <br> <strong>PSAD56 UTM 17S:</strong> ${psad56Coords.utmEasting}E, ${psad56Coords.utmNorthing}N (±${accuracy.toFixed(2)}m)`;
+                    coordinatesSpan.innerHTML = `<strong>WGS84:</strong> ${lat.toFixed(6)}, ${lng.toFixed(6)} <br> <strong>PSAD56 UTM 17S:</strong> ${utmCoords.easting.toFixed(3)}E, ${utmCoords.northing.toFixed(3)}N (±${accuracy.toFixed(2)}m)`;
                     locationDisplay.classList.add('show');
                     getLocationBtn.innerHTML = '<i class="fas fa-location-crosshairs"></i> GPS';
                     getLocationBtn.disabled = false;
